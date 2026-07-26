@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Checkly — My Dashboard</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#181C22">
+<style>
+  :root {
+    --bg: #181C22; --panel: #242A32; --border: #2E3540;
+    --cream: #F2E7CE; --muted: #8993A1;
+    --brass: #C6903F; --late: #E4572E; --ontime: #4C9A76;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg); color: var(--cream);
+    font-family: system-ui, sans-serif;
+    min-height: 100vh; padding-bottom: 40px;
+  }
+
+  /* ── Header ── */
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 20px; background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 10;
+  }
+  .back-btn {
+    font-size: 14px; color: var(--brass); text-decoration: none; font-weight: 500;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .header-title { font-size: 15px; font-weight: 600; }
+  .header-date { font-size: 13px; color: var(--muted); }
+
+  /* ── Main layout ── */
+  .container {
+    max-width: 640px; margin: 0 auto;
+    padding: 20px 16px; display: flex; flex-direction: column; gap: 14px;
+  }
+  @media (min-width: 768px) { .container { padding: 32px 24px; gap: 20px; } }
+  @media (min-width: 1024px) { .container { max-width: 800px; } }
+
+  /* ── Greeting ── */
+  .greeting { padding: 4px 0; }
+  .greeting-name { font-size: 22px; font-weight: 700; }
+  .greeting-sub { font-size: 14px; color: var(--muted); margin-top: 3px; }
+  @media (min-width: 768px) { .greeting-name { font-size: 26px; } }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 14px; overflow: hidden;
+  }
+  .card-header {
+    padding: 14px 18px 0; font-size: 11px; font-weight: 600;
+    letter-spacing: .8px; color: var(--muted); text-transform: uppercase;
+  }
+  .card-body { padding: 14px 18px 18px; }
+
+  /* ── Today timeline ── */
+  .timeline { display: flex; flex-direction: column; gap: 0; }
+  .tl-row {
+    display: flex; align-items: center; gap: 14px; padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .tl-row:last-child { border-bottom: none; }
+  .tl-dot {
+    width: 32px; height: 32px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; flex-shrink: 0;
+  }
+  .tl-dot.done { background: rgba(76,154,118,.2); color: var(--ontime); }
+  .tl-dot.pending { background: rgba(137,147,161,.1); color: var(--muted); }
+  .tl-dot.late-dot { background: rgba(228,87,46,.15); color: var(--late); }
+  .tl-label { font-size: 13px; color: var(--muted); }
+  .tl-value { font-size: 16px; font-weight: 600; margin-top: 1px; }
+  .tl-meta { margin-left: auto; text-align: right; }
+  .badge {
+    display: inline-block; padding: 3px 10px; border-radius: 20px;
+    font-size: 12px; font-weight: 500;
+  }
+  .badge-ontime { background: rgba(76,154,118,.15); color: var(--ontime); }
+  .badge-late   { background: rgba(228,87,46,.15);  color: var(--late); }
+  .badge-pending{ background: rgba(137,147,161,.1); color: var(--muted); }
+
+  .fee-row {
+    margin-top: 12px; padding: 10px 14px;
+    background: rgba(228,87,46,.08); border-radius: 8px;
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 14px; color: var(--muted);
+  }
+  .fee-row strong { color: var(--late); font-size: 16px; }
+
+  /* ── Progress bar ── */
+  .shift-progress { margin-top: 14px; }
+  .progress-label { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+  .progress-track { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+  .progress-fill  { height: 100%; background: var(--ontime); border-radius: 3px; transition: width .5s; }
+
+  /* ── Week table ── */
+  .week-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .week-table th {
+    text-align: left; font-size: 11px; color: var(--muted);
+    text-transform: uppercase; letter-spacing: .5px; padding: 6px 0; font-weight: 500;
+  }
+  .week-table td { padding: 9px 0; border-top: 1px solid var(--border); }
+  .week-table td:last-child { text-align: right; }
+  .today-row-week { font-weight: 600; color: var(--cream); }
+
+  /* ── Two-column on tablet+ ── */
+  .two-col { display: grid; grid-template-columns: 1fr; gap: 14px; }
+  @media (min-width: 640px) { .two-col { grid-template-columns: 1fr 1fr; gap: 20px; } }
+
+  /* ── Action button ── */
+  .btn-checkout {
+    width: 100%; padding: 15px; font-size: 16px; font-weight: 600;
+    border: none; border-radius: 12px; background: var(--panel);
+    border: 1px solid var(--border); color: var(--cream);
+    cursor: pointer; transition: background .2s;
+  }
+  .btn-checkout:hover { background: var(--border); }
+  .btn-checkout.checkin-mode { background: var(--brass); color: #181C22; border-color: var(--brass); }
+</style>
+</head>
+<body>
+
+<header>
+  <a class="back-btn" href="index.html">
+    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M15 19l-7-7 7-7"/></svg>
+    Check In/Out
+  </a>
+  <span class="header-title">My Attendance</span>
+  <span class="header-date" id="todayDate"></span>
+</header>
+
+<div class="container">
+
+  <div class="greeting">
+    <div class="greeting-name" id="greetingText">Good morning, Alisher</div>
+    <div class="greeting-sub" id="shiftLabel">Morning shift · 09:00 – 17:00</div>
+  </div>
+
+  <!-- Today -->
+  <div class="card">
+    <div class="card-header">Today</div>
+    <div class="card-body">
+      <div class="timeline">
+        <div class="tl-row">
+          <div class="tl-dot done" id="checkinDot">✓</div>
+          <div>
+            <div class="tl-label">Checked in</div>
+            <div class="tl-value" id="checkinTime">09:02</div>
+          </div>
+          <div class="tl-meta">
+            <span class="badge badge-ontime" id="checkinBadge">On time</span>
+          </div>
+        </div>
+        <div class="tl-row">
+          <div class="tl-dot pending" id="checkoutDot">○</div>
+          <div>
+            <div class="tl-label">Check out</div>
+            <div class="tl-value" id="checkoutTime">—</div>
+          </div>
+          <div class="tl-meta">
+            <span class="badge badge-pending" id="checkoutBadge">Pending</span>
+          </div>
+        </div>
+      </div>
+      <div class="fee-row" id="feeRow" style="display:none">
+        Late fee applied <strong id="feeAmount">$0.00</strong>
+      </div>
+      <div class="shift-progress" id="progressWrap">
+        <div class="progress-label">
+          <span>09:00 shift start</span>
+          <span id="progressPct">—</span>
+          <span>17:00 end</span>
+        </div>
+        <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats + week -->
+  <div class="two-col">
+    <div class="card">
+      <div class="card-header">This Month</div>
+      <div class="card-body">
+        <div style="display:flex;gap:20px;flex-wrap:wrap">
+          <div>
+            <div style="font-size:28px;font-weight:700;color:var(--ontime)" id="statOnTime">18</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px">On time</div>
+          </div>
+          <div>
+            <div style="font-size:28px;font-weight:700;color:var(--late)" id="statLate">2</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px">Late</div>
+          </div>
+          <div>
+            <div style="font-size:28px;font-weight:700" id="statFees">$9.00</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px">Total fees</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">This Week</div>
+      <div class="card-body" style="padding-top:10px">
+        <table class="week-table">
+          <tbody id="weekBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <button class="btn-checkout" id="actionBtn" onclick="goCheckIn()">Check Out →</button>
+
+</div>
+
+<script>
+const WEEK = [
+  { day: 'Mon', date: '21', in: '09:00', late: 0,  status: 'ontime' },
+  { day: 'Tue', date: '22', in: '09:14', late: 9,  status: 'late'   },
+  { day: 'Wed', date: '23', in: '09:01', late: 0,  status: 'ontime' },
+  { day: 'Thu', date: '24', in: '09:00', late: 0,  status: 'ontime' },
+  { day: 'Fri', date: '25', in: '09:00', late: 0,  status: 'ontime' },
+  { day: 'Sat', date: '26', in: '—',    late: null, status: 'today' },
+];
+
+// Read data passed from check-in page
+const saved = JSON.parse(sessionStorage.getItem('checklyWorker') || 'null');
+const data = saved || {
+  worker_name: 'Alisher Nazarov',
+  event_type: 'check_in',
+  minutes_late: 0,
+  fee_charged: 0,
+  checkin_time: '09:02',
+  checkout_time: null,
+};
+
+// Greeting
+const hour = new Date().getHours();
+const greet = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+const firstName = (data.worker_name || 'Worker').split(' ')[0];
+document.getElementById('greetingText').textContent = `${greet}, ${firstName}`;
+
+// Date
+const now = new Date();
+document.getElementById('todayDate').textContent = now.toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' });
+
+// Check-in row
+if (data.checkin_time) {
+  document.getElementById('checkinTime').textContent = data.checkin_time;
+  if (data.minutes_late > 0) {
+    document.getElementById('checkinBadge').textContent = `${data.minutes_late} min late`;
+    document.getElementById('checkinBadge').className = 'badge badge-late';
+    document.getElementById('checkinDot').className = 'tl-dot late-dot';
+    document.getElementById('checkinDot').textContent = '!';
+    if (data.fee_charged > 0) {
+      document.getElementById('feeRow').style.display = 'flex';
+      document.getElementById('feeAmount').textContent = `$${parseFloat(data.fee_charged).toFixed(2)}`;
+    }
+  }
+}
+
+// Check-out row
+if (data.event_type === 'check_out' && data.checkout_time) {
+  document.getElementById('checkoutTime').textContent = data.checkout_time;
+  document.getElementById('checkoutDot').className = 'tl-dot done';
+  document.getElementById('checkoutDot').textContent = '✓';
+  document.getElementById('checkoutBadge').textContent = 'Done';
+  document.getElementById('checkoutBadge').className = 'badge badge-ontime';
+  document.getElementById('actionBtn').textContent = '← Check In Again';
+  document.getElementById('actionBtn').classList.add('checkin-mode');
+  document.getElementById('progressWrap').style.display = 'none';
+}
+
+// Shift progress (morning shift 09:00–17:00)
+const shiftStart = new Date(); shiftStart.setHours(9, 0, 0, 0);
+const shiftEnd   = new Date(); shiftEnd.setHours(17, 0, 0, 0);
+const elapsed = Math.max(0, Math.min(now - shiftStart, shiftEnd - shiftStart));
+const pct = Math.round((elapsed / (shiftEnd - shiftStart)) * 100);
+document.getElementById('progressFill').style.width = pct + '%';
+document.getElementById('progressPct').textContent = pct + '% through';
+
+// Week table
+const wb = document.getElementById('weekBody');
+wb.innerHTML = WEEK.map(r => {
+  const isToday = r.status === 'today';
+  const badge = isToday
+    ? `<span class="badge badge-pending">Today</span>`
+    : r.status === 'late'
+      ? `<span class="badge badge-late">+${r.late}m</span>`
+      : `<span class="badge badge-ontime">✓</span>`;
+  return `<tr class="${isToday ? 'today-row-week' : ''}">
+    <td style="color:var(--muted);width:36px">${r.day}</td>
+    <td>${r.in}</td>
+    <td>${badge}</td>
+  </tr>`;
+}).join('');
+
+function goCheckIn() {
+  window.location.href = 'index.html';
+}
+</script>
+</body>
+</html>

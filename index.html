@@ -3,137 +3,238 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Check In</title>
+<title>Checkly — Check In</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#181C22">
 <style>
-  :root{ --bg:#181C22; --panel:#242A32; --cream:#F2E7CE; --brass:#C6903F; --late:#E4572E; --ontime:#4C9A76; }
-  *{box-sizing:border-box;}
-  body{margin:0;background:var(--bg);color:var(--cream);font-family:system-ui,sans-serif;
-       display:flex;flex-direction:column;align-items:center;padding:24px 16px;min-height:100vh;}
-  h1{font-size:20px;margin:0 0 20px;}
-  video, #photo-preview{width:100%;max-width:360px;border-radius:12px;background:#000;}
-  #status{margin-top:18px;font-size:15px;text-align:center;min-height:24px;}
-  #status.late{color:var(--late);} #status.ontime{color:var(--ontime);}
-  button{margin-top:20px;padding:14px 28px;font-size:16px;border:none;border-radius:10px;
-         background:var(--brass);color:#181C22;font-weight:600;cursor:pointer;width:100%;max-width:360px;}
-  button:disabled{opacity:.5;}
-  #locNote{font-size:12px;color:#8993A1;margin-top:8px;}
+  :root {
+    --bg: #181C22; --panel: #242A32; --cream: #F2E7CE;
+    --brass: #C6903F; --late: #E4572E; --ontime: #4C9A76; --muted: #8993A1;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg); color: var(--cream);
+    font-family: system-ui, sans-serif;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 28px 16px; min-height: 100vh;
+  }
+  h1 { font-size: 20px; font-weight: 600; margin-bottom: 4px; }
+  #shiftStatus { font-size: 13px; color: var(--muted); margin-bottom: 18px; min-height: 18px; }
+
+  .cam-wrap {
+    position: relative; width: 100%; max-width: 360px;
+    border-radius: 14px; overflow: hidden; background: #000;
+    box-shadow: 0 4px 32px rgba(0,0,0,.5);
+  }
+  video { width: 100%; display: block; max-height: 260px; object-fit: cover; }
+  #overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+
+  #faceHint {
+    margin-top: 10px; font-size: 13px; color: var(--muted);
+    min-height: 20px; text-align: center; transition: color .3s;
+  }
+  #faceHint.ready { color: var(--ontime); }
+
+  #locNote { font-size: 12px; color: var(--muted); margin-top: 6px; }
+
+  #captureBtn {
+    margin-top: 18px; padding: 14px 28px; font-size: 16px; font-weight: 600;
+    border: none; border-radius: 10px; background: var(--brass); color: #181C22;
+    cursor: pointer; width: 100%; max-width: 360px; transition: opacity .2s;
+  }
+  #captureBtn:disabled { opacity: .35; cursor: default; }
+
+  #status {
+    margin-top: 16px; font-size: 15px; font-weight: 500;
+    text-align: center; min-height: 24px;
+  }
+  #status.late   { color: var(--late); }
+  #status.ontime { color: var(--ontime); }
 </style>
 </head>
 <body>
-  <h1>Tap to Check In / Out</h1>
-  <div style="font-size:11px;color:#C6903F;margin-bottom:8px;letter-spacing:.5px;">DEMO MODE — cycles through all states</div>
-  <div id="shiftStatus" style="font-size:13px;color:#8993A1;margin-bottom:12px;min-height:18px;"></div>
-  <video id="cam" autoplay playsinline muted></video>
-  <canvas id="canvas" style="display:none;"></canvas>
-  <button id="captureBtn">Capture &amp; Submit</button>
-  <div id="locNote">Getting location…</div>
-  <div id="status"></div>
 
+<h1>Check In / Out</h1>
+<div id="shiftStatus">Today: checked in at 09:03 — currently IN</div>
+
+<div class="cam-wrap">
+  <video id="cam" autoplay playsinline muted></video>
+  <canvas id="overlay"></canvas>
+</div>
+
+<div id="faceHint">Loading face detection…</div>
+<div id="locNote">Getting location…</div>
+<canvas id="capture" style="display:none"></canvas>
+<button id="captureBtn">Capture &amp; Submit</button>
+<div id="status"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.13/dist/face-api.js"></script>
 <script>
-const API_BASE = "https://your-api-domain.example.com"; // set to your deployed API
-const DEMO_MODE = true; // remove before real deployment
+const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.13/model';
+
 const DEMO_STATES = [
-  { ok: true,  data: { worker_name: 'Alisher Nazarov', event_type: 'check_in',  minutes_late: 0,  fee_charged: 0,    status: 'accepted' } },
-  { ok: true,  data: { worker_name: 'Alisher Nazarov', event_type: 'check_in',  minutes_late: 12, fee_charged: 6.00, status: 'accepted' } },
-  { ok: true,  data: { worker_name: 'Alisher Nazarov', event_type: 'check_out', minutes_late: null, fee_charged: 0,  status: 'accepted' } },
+  { ok: true,  data: { worker_name: 'Alisher Nazarov', event_type: 'check_in',  minutes_late: 0,  fee_charged: 0    } },
+  { ok: true,  data: { worker_name: 'Alisher Nazarov', event_type: 'check_in',  minutes_late: 12, fee_charged: 6.00 } },
+  { ok: true,  data: { worker_name: 'Alisher Nazarov', event_type: 'check_out', minutes_late: null, fee_charged: 0  } },
   { ok: false, data: { detail: "Face not recognized. Try again or contact your manager." } },
 ];
 let demoIdx = 0;
 
-// Demo: simulate worker already checked in today
-const shiftStatusEl = document.getElementById('shiftStatus');
-shiftStatusEl.textContent = "Today: checked in at 09:03 — currently IN";
-
-const video = document.getElementById('cam');
-const canvas = document.getElementById('canvas');
-const statusEl = document.getElementById('status');
-const locNote = document.getElementById('locNote');
-const btn = document.getElementById('captureBtn');
+const video     = document.getElementById('cam');
+const overlay   = document.getElementById('overlay');
+const capture   = document.getElementById('capture');
+const btn       = document.getElementById('captureBtn');
+const statusEl  = document.getElementById('status');
+const shiftEl   = document.getElementById('shiftStatus');
+const hintEl    = document.getElementById('faceHint');
+const locNote   = document.getElementById('locNote');
+const ctx       = overlay.getContext('2d');
 
 let currentPosition = null;
+let faceReady = false;
+let scanning = false;
 
+// ── Geolocation ──
 navigator.geolocation.watchPosition(
   pos => {
     currentPosition = pos;
     locNote.textContent = `Location ready (±${Math.round(pos.coords.accuracy)}m)`;
   },
-  err => { locNote.textContent = "Location permission needed to check in."; },
+  () => { locNote.textContent = 'Location permission needed.'; },
   { enableHighAccuracy: true, maximumAge: 5000 }
 );
 
-navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
-  .then(stream => { video.srcObject = stream; })
-  .catch(() => { statusEl.textContent = "Camera permission needed."; });
+// ── Camera ──
+navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false })
+  .then(stream => {
+    video.srcObject = stream;
+    video.onloadedmetadata = () => {
+      overlay.width  = video.videoWidth;
+      overlay.height = video.videoHeight;
+      loadFaceModel();
+    };
+  })
+  .catch(() => { hintEl.textContent = 'Camera permission needed.'; });
 
-btn.addEventListener('click', async () => {
-  if (!currentPosition) {
-    statusEl.textContent = "Waiting for location…";
-    return;
+// ── Load model ──
+async function loadFaceModel() {
+  try {
+    await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
+    hintEl.textContent = 'Position your face in the frame';
+    detectLoop();
+  } catch {
+    hintEl.textContent = 'Position your face and tap to check in';
+    btn.textContent = 'Capture & Submit';
+    btn.disabled = false;
   }
-  btn.disabled = true;
-  statusEl.textContent = "Submitting…";
+}
 
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
-  canvas.getContext('2d').drawImage(video, 0, 0);
+// ── Corner bracket drawing ──
+function drawBrackets(box, color) {
+  const { x, y, width: w, height: h } = box;
+  const L = Math.min(w, h) * 0.2;
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 3;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(x + L, y);       ctx.lineTo(x, y);       ctx.lineTo(x, y + L);
+  ctx.moveTo(x+w-L, y);       ctx.lineTo(x+w, y);     ctx.lineTo(x+w, y + L);
+  ctx.moveTo(x + L, y+h);     ctx.lineTo(x, y+h);     ctx.lineTo(x, y+h-L);
+  ctx.moveTo(x+w-L, y+h);     ctx.lineTo(x+w, y+h);   ctx.lineTo(x+w, y+h-L);
+  ctx.stroke();
+  ctx.restore();
+}
 
-  canvas.toBlob(async (blob) => {
-    const form = new FormData();
-    form.append('photo', blob, 'capture.jpg');
-    form.append('latitude', currentPosition.coords.latitude);
-    form.append('longitude', currentPosition.coords.longitude);
-    // Note: reliable mock-location detection is Android-native only;
-    // a browser-based PWA can't call Location.isFromMockProvider().
-    // This is a known limitation -- see README.
-    form.append('mock_location', 'false');
+// ── Detection loop ──
+async function detectLoop() {
+  if (scanning) { requestAnimationFrame(detectLoop); return; }
 
-    try {
-      let res, data;
-      if (DEMO_MODE) {
-        await new Promise(r => setTimeout(r, 800)); // simulate network delay
-        const state = DEMO_STATES[demoIdx % DEMO_STATES.length];
-        demoIdx++;
-        res = { ok: state.ok };
-        data = state.data;
-      } else {
-        const r = await fetch(`${API_BASE}/attendance/check-in`, { method: 'POST', body: form });
-        res = r; data = await r.json();
-      }
-      // The captured frame is discarded here -- it is never written to
-      // disk or kept in memory beyond this request.
-      if (!res.ok) {
-        statusEl.textContent = data.detail || "Could not verify. Try again.";
-        statusEl.className = "";
-      } else if (data.event_type === 'check_in') {
-        const name = data.worker_name ? `${data.worker_name} — ` : '';
-        if (data.minutes_late > 0) {
-          statusEl.textContent = `${name}${data.minutes_late} min late, $${data.fee_charged} fee`;
-          statusEl.className = "late";
-          shiftStatusEl.textContent = "Today: currently IN (late)";
-        } else {
-          statusEl.textContent = `${name}checked in on time`;
-          statusEl.className = "ontime";
-          shiftStatusEl.textContent = "Today: currently IN";
-        }
-      } else {
-        const name = data.worker_name ? `${data.worker_name} — ` : '';
-        statusEl.textContent = `${name}checked out. Have a good day!`;
-        statusEl.className = "ontime";
-        shiftStatusEl.textContent = "Today: checked out";
-      }
-    } catch (e) {
-      statusEl.textContent = "Network error — try again.";
-    } finally {
+  const dets = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions());
+  ctx.clearRect(0, 0, overlay.width, overlay.height);
+
+  if (dets.length > 0) {
+    drawBrackets(dets[0].box, '#4C9A76');
+    if (!faceReady) {
+      faceReady = true;
+      hintEl.textContent = 'Face detected — ready';
+      hintEl.className = 'ready';
+      btn.textContent = 'Capture & Submit';
       btn.disabled = false;
     }
-  }, 'image/jpeg', 0.85);
+  } else {
+    if (faceReady) {
+      faceReady = false;
+      hintEl.textContent = 'Position your face in the frame';
+      hintEl.className = '';
+      btn.textContent = 'Capture & Submit';
+      // keep button enabled in demo so the flow is always clickable
+    }
+  }
+
+  requestAnimationFrame(detectLoop);
+}
+
+// ── Capture & submit ──
+btn.addEventListener('click', async () => {
+  if (!currentPosition) { statusEl.textContent = 'Waiting for location…'; return; }
+
+  btn.disabled = true;
+  scanning = true;
+  statusEl.textContent = '';
+  statusEl.className = '';
+
+  // Scan animation
+  let t = 0;
+  const scan = setInterval(() => {
+    ctx.clearRect(0, 0, overlay.width, overlay.height);
+    const y = (t % overlay.height);
+    const grad = ctx.createLinearGradient(0, y - 30, 0, y + 30);
+    grad.addColorStop(0,   'rgba(198,144,63,0)');
+    grad.addColorStop(0.5, 'rgba(198,144,63,0.25)');
+    grad.addColorStop(1,   'rgba(198,144,63,0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, y - 30, overlay.width, 60);
+    t += 12;
+  }, 16);
+
+  capture.width  = video.videoWidth;
+  capture.height = video.videoHeight;
+  capture.getContext('2d').drawImage(video, 0, 0);
+
+  await new Promise(r => setTimeout(r, 900));
+  clearInterval(scan);
+  ctx.clearRect(0, 0, overlay.width, overlay.height);
+
+  // Demo response
+  const { ok, data } = DEMO_STATES[demoIdx % DEMO_STATES.length];
+  demoIdx++;
+
+  if (!ok) {
+    statusEl.textContent = data.detail || 'Could not verify. Try again.';
+    statusEl.className = '';
+    scanning = false;
+    btn.disabled = false;
+    detectLoop();
+  } else {
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+    const payload = { ...data };
+    if (data.event_type === 'check_in') {
+      payload.checkin_time = timeStr;
+    } else {
+      const prev = JSON.parse(sessionStorage.getItem('checklyWorker') || '{}');
+      payload.checkin_time = prev.checkin_time || '09:00';
+      payload.checkout_time = timeStr;
+    }
+    sessionStorage.setItem('checklyWorker', JSON.stringify(payload));
+    statusEl.textContent = 'Verified ✓';
+    statusEl.className = 'ontime';
+    setTimeout(() => { window.location.href = 'worker-dashboard.html'; }, 600);
+  }
 });
 
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js');
-}
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
 </script>
 </body>
 </html>

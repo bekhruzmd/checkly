@@ -2,8 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Checkly Admin</title>
+<meta name="theme-color" content="#181C22">
 <style>
   :root {
     --bg: #181C22; --panel: #242A32; --border: #2E3540;
@@ -13,292 +14,403 @@
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: var(--bg); color: var(--cream); font-family: system-ui, sans-serif; min-height: 100vh; }
 
-  /* Header */
-  header { background: var(--panel); border-bottom: 1px solid var(--border); padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; }
-  header h1 { font-size: 17px; font-weight: 600; letter-spacing: .3px; }
+  /* ── Top header ── */
+  .topbar {
+    background: var(--panel); border-bottom: 1px solid var(--border);
+    padding: 14px 20px; display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 20;
+  }
+  .topbar h1 { font-size: 17px; font-weight: 600; }
   .demo-badge { font-size: 11px; color: var(--brass); letter-spacing: .5px; }
 
-  /* Tabs */
-  nav { display: flex; gap: 2px; background: var(--panel); border-bottom: 1px solid var(--border); padding: 0 24px; }
-  nav button { background: none; border: none; color: var(--muted); font-size: 14px; padding: 12px 16px; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
-  nav button.active { color: var(--cream); border-bottom-color: var(--brass); }
+  /* ── Layout: mobile = stacked, desktop = sidebar ── */
+  .layout { display: flex; min-height: calc(100vh - 50px); }
 
-  /* Content */
-  main { padding: 24px; max-width: 1000px; margin: 0 auto; }
+  /* Desktop sidebar */
+  .sidebar {
+    display: none;
+    width: 200px; flex-shrink: 0;
+    background: var(--panel); border-right: 1px solid var(--border);
+    padding: 24px 0;
+    position: sticky; top: 50px; height: calc(100vh - 50px); overflow-y: auto;
+  }
+  @media (min-width: 768px) { .sidebar { display: block; } }
+
+  .sidebar-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 11px 20px; font-size: 14px; cursor: pointer;
+    color: var(--muted); border-left: 3px solid transparent;
+    background: none; border-top: none; border-right: none; border-bottom: none;
+    width: 100%; text-align: left;
+  }
+  .sidebar-item.active { color: var(--cream); border-left-color: var(--brass); background: rgba(198,144,63,.06); }
+  .sidebar-item:hover:not(.active) { background: rgba(255,255,255,.03); }
+  .sidebar-badge {
+    margin-left: auto; background: rgba(228,87,46,.2); color: var(--late);
+    border-radius: 20px; padding: 1px 7px; font-size: 11px;
+  }
+
+  /* Main content */
+  .main { flex: 1; padding: 20px 16px; max-width: 900px; }
+  @media (min-width: 768px) { .main { padding: 28px 28px; } }
+
   .tab { display: none; }
   .tab.active { display: block; }
 
-  /* Controls row */
-  .controls { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
-  .controls label { font-size: 13px; color: var(--muted); }
-  input[type=date] { background: var(--panel); border: 1px solid var(--border); color: var(--cream); padding: 7px 10px; border-radius: 7px; font-size: 14px; }
-  .summary { margin-left: auto; font-size: 13px; color: var(--muted); }
-  .summary span { color: var(--cream); font-weight: 600; }
+  /* ── Bottom nav (mobile only) ── */
+  .bottom-nav {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: var(--panel); border-top: 1px solid var(--border);
+    display: flex; z-index: 20;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  @media (min-width: 768px) { .bottom-nav { display: none; } }
+  .nav-btn {
+    flex: 1; padding: 10px 4px 8px; background: none; border: none;
+    color: var(--muted); font-size: 11px; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+  }
+  .nav-btn.active { color: var(--brass); }
+  .nav-icon { font-size: 20px; line-height: 1; }
 
-  /* Table */
-  .table-wrap { overflow-x: auto; }
-  table { width: 100%; border-collapse: collapse; font-size: 14px; }
-  th { text-align: left; color: var(--muted); font-weight: 500; font-size: 12px; text-transform: uppercase; letter-spacing: .5px; padding: 8px 12px; border-bottom: 1px solid var(--border); }
-  td { padding: 11px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  /* Bottom nav spacer on mobile */
+  @media (max-width: 767px) { body { padding-bottom: 70px; } }
+
+  /* ── Controls row ── */
+  .controls {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 18px; flex-wrap: wrap;
+  }
+  .controls label { font-size: 13px; color: var(--muted); }
+  input[type=date] {
+    background: var(--panel); border: 1px solid var(--border);
+    color: var(--cream); padding: 7px 10px; border-radius: 8px; font-size: 14px;
+  }
+  .summary {
+    margin-left: auto; font-size: 13px; color: var(--muted);
+    display: flex; gap: 12px; flex-wrap: wrap;
+  }
+  .summary-item { white-space: nowrap; }
+  .summary-item span { font-weight: 600; color: var(--cream); }
+
+  /* ── Table ── */
+  .table-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid var(--border); }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 560px; }
+  th {
+    text-align: left; color: var(--muted); font-weight: 500;
+    font-size: 12px; text-transform: uppercase; letter-spacing: .5px;
+    padding: 10px 14px; border-bottom: 1px solid var(--border);
+    background: var(--panel); white-space: nowrap;
+  }
+  td { padding: 11px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
   tr:last-child td { border-bottom: none; }
   tr:hover td { background: rgba(255,255,255,.02); }
 
-  /* Badges */
-  .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 12px; font-weight: 500; }
-  .badge-ontime { background: rgba(76,154,118,.15); color: var(--ontime); }
-  .badge-late { background: rgba(228,87,46,.15); color: var(--late); }
-  .badge-review { background: rgba(198,144,63,.15); color: var(--review); }
-  .badge-morning { background: rgba(242,231,206,.08); color: var(--cream); }
-  .badge-night { background: rgba(137,147,161,.1); color: var(--muted); }
+  /* ── Badges ── */
+  .badge {
+    display: inline-block; padding: 3px 9px; border-radius: 20px;
+    font-size: 12px; font-weight: 500; white-space: nowrap;
+  }
+  .badge-ontime  { background: rgba(76,154,118,.15);  color: var(--ontime); }
+  .badge-late    { background: rgba(228,87,46,.15);   color: var(--late); }
+  .badge-review  { background: rgba(198,144,63,.15);  color: var(--review); }
+  .badge-absent  { background: rgba(137,147,161,.1);  color: var(--muted); }
+  .badge-morning { background: rgba(198,144,63,.1);   color: var(--brass); }
+  .badge-night   { background: rgba(137,147,161,.12); color: var(--muted); }
   .fee { color: var(--late); font-weight: 600; }
 
-  /* Review cards */
-  .review-card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; margin-bottom: 12px; display: flex; align-items: flex-start; gap: 16px; }
-  .review-card .meta { flex: 1; }
-  .review-card .name { font-weight: 600; font-size: 15px; margin-bottom: 4px; }
-  .review-card .detail { font-size: 13px; color: var(--muted); line-height: 1.5; }
-  .review-card .reason { margin-top: 6px; font-size: 12px; color: var(--review); }
-  .review-actions { display: flex; gap: 8px; align-items: center; }
-  .btn { padding: 8px 16px; border-radius: 7px; font-size: 13px; font-weight: 600; border: none; cursor: pointer; }
+  /* ── Review cards ── */
+  .review-card {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 12px; padding: 16px 18px; margin-bottom: 12px;
+    display: flex; align-items: flex-start; gap: 14px; flex-wrap: wrap;
+  }
+  .review-meta { flex: 1; min-width: 180px; }
+  .review-name { font-weight: 600; font-size: 15px; margin-bottom: 3px; }
+  .review-detail { font-size: 13px; color: var(--muted); line-height: 1.5; }
+  .review-reason { margin-top: 5px; font-size: 12px; color: var(--review); }
+  .confidence { font-size: 12px; color: var(--muted); text-align: center; min-width: 56px; }
+  .confidence strong { display: block; font-size: 20px; font-weight: 700; color: var(--review); }
+  .review-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .btn { padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; border: none; cursor: pointer; }
   .btn-approve { background: rgba(76,154,118,.2); color: var(--ontime); }
   .btn-override { background: rgba(228,87,46,.15); color: var(--late); }
   .btn-approve:hover { background: rgba(76,154,118,.35); }
   .btn-override:hover { background: rgba(228,87,46,.3); }
-  .confidence { font-size: 12px; color: var(--muted); text-align: center; }
 
-  /* Enrollment form */
-  .form-card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 24px; max-width: 480px; }
+  /* ── Enrollment form ── */
+  .form-card {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 12px; padding: 24px; max-width: 480px;
+  }
   .form-row { margin-bottom: 18px; }
   .form-row label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
-  .form-row input, .form-row select { width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--cream); padding: 10px 12px; border-radius: 7px; font-size: 14px; }
+  .form-row input, .form-row select {
+    width: 100%; background: var(--bg); border: 1px solid var(--border);
+    color: var(--cream); padding: 10px 12px; border-radius: 8px; font-size: 14px;
+  }
   .form-row input:focus, .form-row select:focus { outline: none; border-color: var(--brass); }
-  .photo-drop { border: 1.5px dashed var(--border); border-radius: 8px; padding: 32px; text-align: center; color: var(--muted); font-size: 14px; cursor: pointer; }
+  .photo-drop {
+    border: 1.5px dashed var(--border); border-radius: 8px;
+    padding: 32px; text-align: center; color: var(--muted);
+    font-size: 14px; cursor: pointer;
+  }
   .photo-drop:hover { border-color: var(--brass); color: var(--brass); }
-  .btn-enroll { width: 100%; padding: 12px; background: var(--brass); color: #181C22; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 4px; }
-  .btn-enroll:hover { opacity: .9; }
+  .btn-enroll {
+    width: 100%; padding: 12px; background: var(--brass); color: #181C22;
+    border: none; border-radius: 8px; font-size: 15px; font-weight: 600;
+    cursor: pointer; margin-top: 4px;
+  }
+  .btn-enroll:disabled { opacity: .5; }
   .field-note { font-size: 12px; color: var(--muted); margin-top: 4px; }
-  .enroll-success { display: none; background: rgba(76,154,118,.12); border: 1px solid rgba(76,154,118,.3); border-radius: 8px; padding: 14px; text-align: center; color: var(--ontime); font-size: 14px; margin-top: 16px; }
+  .enroll-success {
+    display: none; background: rgba(76,154,118,.12);
+    border: 1px solid rgba(76,154,118,.3); border-radius: 8px;
+    padding: 14px; text-align: center; color: var(--ontime);
+    font-size: 14px; margin-top: 16px;
+  }
 
-  /* Empty state */
+  .section-title { font-size: 17px; font-weight: 600; margin-bottom: 16px; }
   .empty { text-align: center; color: var(--muted); padding: 48px 0; font-size: 14px; }
 </style>
 </head>
 <body>
 
-<header>
+<div class="topbar">
   <h1>Checkly Admin</h1>
   <span class="demo-badge">DEMO MODE</span>
-</header>
+</div>
 
-<nav>
-  <button class="active" onclick="switchTab('attendance', this)">Attendance</button>
-  <button onclick="switchTab('review', this)">Manual Review <span id="reviewCount" style="background:rgba(228,87,46,.2);color:var(--late);border-radius:20px;padding:1px 7px;font-size:11px;margin-left:4px;">3</span></button>
-  <button onclick="switchTab('enroll', this)">Enroll Worker</button>
+<div class="layout">
+
+  <!-- Desktop sidebar -->
+  <nav class="sidebar">
+    <button class="sidebar-item active" onclick="switchTab('attendance', this)">
+      📋 Attendance
+    </button>
+    <button class="sidebar-item" onclick="switchTab('review', this)">
+      ⚠️ Manual Review
+      <span class="sidebar-badge" id="sidebarReviewCount">3</span>
+    </button>
+    <button class="sidebar-item" onclick="switchTab('enroll', this)">
+      ➕ Enroll Worker
+    </button>
+  </nav>
+
+  <!-- Main content -->
+  <div class="main">
+
+    <!-- Attendance -->
+    <div id="tab-attendance" class="tab active">
+      <div class="section-title">Attendance</div>
+      <div class="controls">
+        <label>Date</label>
+        <input type="date" id="datePicker" value="2026-07-26">
+        <div class="summary">
+          <div class="summary-item"><span>48</span> workers</div>
+          <div class="summary-item" style="color:var(--ontime)"><span style="color:var(--ontime)">41</span> on time</div>
+          <div class="summary-item" style="color:var(--late)"><span style="color:var(--late)">5</span> late</div>
+          <div class="summary-item" style="color:var(--review)"><span style="color:var(--review)">3</span> flagged</div>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Shift</th>
+              <th>Check-in</th>
+              <th>Check-out</th>
+              <th>Late</th>
+              <th>Fee</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="attendanceBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Manual Review -->
+    <div id="tab-review" class="tab">
+      <div class="section-title">Manual Review</div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:18px">Flagged for low confidence, failed liveness, or out-of-geofence. Approve to accept or override to adjust.</p>
+      <div id="reviewList"></div>
+    </div>
+
+    <!-- Enroll -->
+    <div id="tab-enroll" class="tab">
+      <div class="section-title">Enroll New Worker</div>
+      <div class="form-card">
+        <div class="form-row">
+          <label>Full name</label>
+          <input type="text" id="enrollName" placeholder="e.g. Alisher Nazarov">
+        </div>
+        <div class="form-row">
+          <label>Shift</label>
+          <select id="enrollShift">
+            <option value="morning">Morning (09:00 – 17:00)</option>
+            <option value="night">Night (21:00 – 05:00)</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label>Telegram chat ID <span style="font-weight:400;color:var(--muted)">(optional)</span></label>
+          <input type="number" id="enrollTelegram" placeholder="e.g. 123456789">
+        </div>
+        <div class="form-row">
+          <label>Enrollment photo</label>
+          <div class="photo-drop" id="photoDrop" onclick="document.getElementById('photoInput').click()">
+            <div id="photoLabel">Tap to upload a clear front-facing photo</div>
+            <input type="file" id="photoInput" accept="image/*" style="display:none" onchange="previewPhoto(this)">
+          </div>
+          <p class="field-note">One face only. Photo is converted to a face embedding and immediately discarded — never stored.</p>
+        </div>
+        <button class="btn-enroll" id="enrollBtn" onclick="submitEnroll()">Enroll Worker</button>
+        <div class="enroll-success" id="enrollSuccess">✓ Worker enrolled successfully.</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Mobile bottom nav -->
+<nav class="bottom-nav">
+  <button class="nav-btn active" id="mnav-attendance" onclick="switchTab('attendance', this, true)">
+    <span class="nav-icon">📋</span>Attendance
+  </button>
+  <button class="nav-btn" id="mnav-review" onclick="switchTab('review', this, true)">
+    <span class="nav-icon">⚠️</span>Review <span id="mobileReviewBadge" style="color:var(--late)"> 3</span>
+  </button>
+  <button class="nav-btn" id="mnav-enroll" onclick="switchTab('enroll', this, true)">
+    <span class="nav-icon">➕</span>Enroll
+  </button>
 </nav>
 
-<main>
-
-  <!-- ── Attendance ── -->
-  <div id="tab-attendance" class="tab active">
-    <div class="controls">
-      <label>Date</label>
-      <input type="date" id="datePicker" value="2026-07-26">
-      <div class="summary">
-        <span>48</span> workers today &nbsp;·&nbsp;
-        <span style="color:var(--ontime)">41</span> on time &nbsp;·&nbsp;
-        <span style="color:var(--late)">5</span> late &nbsp;·&nbsp;
-        <span style="color:var(--review)">3</span> flagged
-      </div>
-    </div>
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Shift</th>
-            <th>Check-in</th>
-            <th>Check-out</th>
-            <th>Late</th>
-            <th>Fee</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody id="attendanceBody"></tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- ── Manual Review ── -->
-  <div id="tab-review" class="tab">
-    <p style="font-size:13px;color:var(--muted);margin-bottom:20px;">Events flagged for low confidence, failed liveness, or out-of-geofence. Approve to accept as-is or override to waive/adjust the fee.</p>
-    <div id="reviewList"></div>
-  </div>
-
-  <!-- ── Enroll Worker ── -->
-  <div id="tab-enroll" class="tab">
-    <div class="form-card">
-      <div class="form-row">
-        <label>Full name</label>
-        <input type="text" id="enrollName" placeholder="e.g. Alisher Nazarov">
-      </div>
-      <div class="form-row">
-        <label>Shift</label>
-        <select id="enrollShift">
-          <option value="morning">Morning (09:00 – 17:00)</option>
-          <option value="night">Night (21:00 – 05:00)</option>
-        </select>
-      </div>
-      <div class="form-row">
-        <label>Telegram chat ID <span style="color:var(--muted);font-weight:400">(optional — for notifications)</span></label>
-        <input type="number" id="enrollTelegram" placeholder="e.g. 123456789">
-      </div>
-      <div class="form-row">
-        <label>Enrollment photo</label>
-        <div class="photo-drop" id="photoDrop" onclick="document.getElementById('photoInput').click()">
-          <div id="photoLabel">Tap to upload a clear front-facing photo</div>
-          <input type="file" id="photoInput" accept="image/*" style="display:none" onchange="previewPhoto(this)">
-        </div>
-        <p class="field-note">One face only. This photo is converted to a 512-d embedding and immediately discarded — never stored.</p>
-      </div>
-      <button class="btn-enroll" onclick="submitEnroll()">Enroll Worker</button>
-      <div class="enroll-success" id="enrollSuccess">Worker enrolled successfully. Face embedding stored.</div>
-    </div>
-  </div>
-
-</main>
-
 <script>
-// ── Tab switching ──
-function switchTab(name, el) {
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
-  document.getElementById('tab-' + name).classList.add('active');
-  el.classList.add('active');
-}
-
-// ── Mock data ──
 const WORKERS = [
-  { name: 'Alisher Nazarov',   shift: 'morning', in: '09:02', out: '17:05', late: 0,  fee: 0,    status: 'accepted' },
-  { name: 'Dilnoza Yusupova',  shift: 'morning', in: '09:14', out: '17:01', late: 9,  fee: 4.50, status: 'accepted' },
-  { name: 'Bobur Toshmatov',   shift: 'morning', in: '09:00', out: '—',     late: 0,  fee: 0,    status: 'accepted' },
-  { name: 'Kamola Ergasheva',  shift: 'morning', in: '09:27', out: '17:00', late: 22, fee: 11.00,status: 'accepted' },
-  { name: 'Jasur Mirzayev',    shift: 'morning', in: '—',     out: '—',     late: null,fee: 0,   status: 'absent'   },
-  { name: 'Sarvinoz Umarova',  shift: 'morning', in: '09:03', out: '17:02', late: 0,  fee: 0,    status: 'accepted' },
-  { name: 'Nodir Xolmatov',    shift: 'morning', in: '09:08', out: '—',     late: 0,  fee: 0,    status: 'manual_review' },
-  { name: 'Malika Karimova',   shift: 'night',   in: '21:00', out: '05:01', late: 0,  fee: 0,    status: 'accepted' },
-  { name: 'Sherzod Razzaqov',  shift: 'night',   in: '21:19', out: '05:00', late: 14, fee: 7.00, status: 'accepted' },
-  { name: 'Feruza Abdullayeva',shift: 'night',   in: '21:01', out: '—',     late: 0,  fee: 0,    status: 'manual_review' },
-  { name: 'Ulugbek Sobirov',   shift: 'night',   in: '21:00', out: '05:00', late: 0,  fee: 0,    status: 'accepted' },
-  { name: 'Gulnora Hasanova',  shift: 'night',   in: '—',     out: '—',     late: null,fee: 0,   status: 'absent'   },
+  { name:'Alisher Nazarov',    shift:'morning', in:'09:02', out:'17:05', late:0,  fee:0,     status:'accepted' },
+  { name:'Dilnoza Yusupova',   shift:'morning', in:'09:14', out:'17:01', late:9,  fee:4.50,  status:'accepted' },
+  { name:'Bobur Toshmatov',    shift:'morning', in:'09:00', out:'—',     late:0,  fee:0,     status:'accepted' },
+  { name:'Kamola Ergasheva',   shift:'morning', in:'09:27', out:'17:00', late:22, fee:11.00, status:'manual_review' },
+  { name:'Jasur Mirzayev',     shift:'morning', in:'—',     out:'—',     late:null,fee:0,    status:'absent'   },
+  { name:'Sarvinoz Umarova',   shift:'morning', in:'09:03', out:'17:02', late:0,  fee:0,     status:'accepted' },
+  { name:'Nodir Xolmatov',     shift:'morning', in:'09:08', out:'—',     late:0,  fee:0,     status:'manual_review' },
+  { name:'Malika Karimova',    shift:'night',   in:'21:00', out:'05:01', late:0,  fee:0,     status:'accepted' },
+  { name:'Sherzod Razzaqov',   shift:'night',   in:'21:19', out:'05:00', late:14, fee:7.00,  status:'accepted' },
+  { name:'Feruza Abdullayeva', shift:'night',   in:'21:01', out:'—',     late:0,  fee:0,     status:'manual_review' },
+  { name:'Ulugbek Sobirov',    shift:'night',   in:'21:00', out:'05:00', late:0,  fee:0,     status:'accepted' },
+  { name:'Gulnora Hasanova',   shift:'night',   in:'—',     out:'—',     late:null,fee:0,    status:'absent'   },
 ];
 
 const REVIEW_EVENTS = [
-  { id: 101, name: 'Nodir Xolmatov',     shift: 'morning', time: '09:08', type: 'check_in',  confidence: 0.63, reasons: ['Confidence below threshold (0.63)'] },
-  { id: 102, name: 'Feruza Abdullayeva', shift: 'night',   time: '21:01', type: 'check_in',  confidence: 0.67, reasons: ['Outside geofence (210m from office)'] },
-  { id: 103, name: 'Kamola Ergasheva',   shift: 'morning', time: '09:27', type: 'check_in',  confidence: 0.61, reasons: ['Confidence below threshold (0.61)', 'Liveness check failed'] },
+  { id:101, name:'Nodir Xolmatov',     shift:'morning', time:'09:08', type:'check_in', confidence:0.63, reasons:['Confidence below threshold (0.63)'] },
+  { id:102, name:'Feruza Abdullayeva', shift:'night',   time:'21:01', type:'check_in', confidence:0.67, reasons:['Outside geofence (210m from office)'] },
+  { id:103, name:'Kamola Ergasheva',   shift:'morning', time:'09:27', type:'check_in', confidence:0.61, reasons:['Confidence below threshold (0.61)', 'Liveness check failed'] },
 ];
 
-// ── Render attendance table ──
-function renderAttendance() {
-  const tbody = document.getElementById('attendanceBody');
-  tbody.innerHTML = WORKERS.map(w => {
-    const statusBadge = w.status === 'manual_review'
-      ? `<span class="badge badge-review">Review</span>`
-      : w.status === 'absent'
-        ? `<span class="badge" style="color:var(--muted)">Absent</span>`
-        : w.late > 0
-          ? `<span class="badge badge-late">Late</span>`
-          : `<span class="badge badge-ontime">On time</span>`;
+// ── Tab switching ──
+function switchTab(name, el, isMobile = false) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
 
+  if (isMobile) {
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    // sync sidebar
+    document.querySelectorAll('.sidebar-item').forEach((b, i) => {
+      b.classList.toggle('active', ['attendance','review','enroll'][i] === name);
+    });
+  } else {
+    document.querySelectorAll('.sidebar-item').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    // sync mobile nav
+    document.querySelectorAll('.nav-btn').forEach((b, i) => {
+      b.classList.toggle('active', ['attendance','review','enroll'][i] === name);
+    });
+  }
+}
+
+// ── Attendance table ──
+function renderAttendance() {
+  document.getElementById('attendanceBody').innerHTML = WORKERS.map(w => {
+    const statusBadge =
+      w.status === 'manual_review' ? `<span class="badge badge-review">Review</span>` :
+      w.status === 'absent'        ? `<span class="badge badge-absent">Absent</span>` :
+      w.late > 0                   ? `<span class="badge badge-late">Late</span>` :
+                                     `<span class="badge badge-ontime">On time</span>`;
     return `<tr>
       <td>${w.name}</td>
       <td><span class="badge badge-${w.shift}">${w.shift}</span></td>
       <td>${w.in}</td>
       <td>${w.out}</td>
-      <td>${w.late != null && w.late > 0 ? w.late + ' min' : w.late === 0 ? '—' : '—'}</td>
+      <td>${w.late > 0 ? w.late + ' min' : '—'}</td>
       <td>${w.fee > 0 ? `<span class="fee">$${w.fee.toFixed(2)}</span>` : '—'}</td>
       <td>${statusBadge}</td>
     </tr>`;
   }).join('');
 }
 
-// ── Render review queue ──
+// ── Review queue ──
 function renderReview() {
   const list = document.getElementById('reviewList');
-  if (REVIEW_EVENTS.length === 0) {
-    list.innerHTML = '<div class="empty">No events pending review.</div>';
-    return;
-  }
-  list.innerHTML = REVIEW_EVENTS.map((e, i) => `
-    <div class="review-card" id="review-${e.id}">
-      <div class="meta">
-        <div class="name">${e.name}</div>
-        <div class="detail">
-          ${e.shift} shift &nbsp;·&nbsp; ${e.type.replace('_', ' ')} at ${e.time}
-        </div>
-        ${e.reasons.map(r => `<div class="reason">⚠ ${r}</div>`).join('')}
+  if (!REVIEW_EVENTS.length) { list.innerHTML = '<div class="empty">No events pending review.</div>'; return; }
+  list.innerHTML = REVIEW_EVENTS.map(e => `
+    <div class="review-card" id="rc-${e.id}">
+      <div class="review-meta">
+        <div class="review-name">${e.name}</div>
+        <div class="review-detail">${e.shift} shift · ${e.type.replace('_',' ')} at ${e.time}</div>
+        ${e.reasons.map(r => `<div class="review-reason">⚠ ${r}</div>`).join('')}
       </div>
-      <div class="confidence">
-        <div style="font-size:18px;font-weight:700;color:var(--review)">${(e.confidence * 100).toFixed(0)}%</div>
-        <div>confidence</div>
-      </div>
+      <div class="confidence"><strong>${(e.confidence*100).toFixed(0)}%</strong>confidence</div>
       <div class="review-actions">
-        <button class="btn btn-approve" onclick="resolveReview(${e.id}, 'approve')">Approve</button>
-        <button class="btn btn-override" onclick="resolveReview(${e.id}, 'override')">Override</button>
+        <button class="btn btn-approve"  onclick="resolve(${e.id})">Approve</button>
+        <button class="btn btn-override" onclick="resolve(${e.id})">Override</button>
       </div>
-    </div>
-  `).join('');
+    </div>`).join('');
 }
 
-function resolveReview(id, action) {
-  const card = document.getElementById('review-' + id);
-  card.style.opacity = '.4';
-  card.style.pointerEvents = 'none';
-  const idx = REVIEW_EVENTS.findIndex(e => e.id === id);
-  if (idx !== -1) REVIEW_EVENTS.splice(idx, 1);
+function resolve(id) {
+  const card = document.getElementById('rc-' + id);
+  card.style.transition = 'opacity .3s'; card.style.opacity = '.3';
   setTimeout(() => {
     card.remove();
-    document.getElementById('reviewCount').textContent = REVIEW_EVENTS.length;
-    if (REVIEW_EVENTS.length === 0)
-      document.getElementById('reviewList').innerHTML = '<div class="empty">No events pending review.</div>';
-  }, 400);
+    const idx = REVIEW_EVENTS.findIndex(e => e.id === id);
+    if (idx !== -1) REVIEW_EVENTS.splice(idx, 1);
+    const n = REVIEW_EVENTS.length;
+    document.getElementById('sidebarReviewCount').textContent = n;
+    document.getElementById('mobileReviewBadge').textContent = n ? ' ' + n : '';
+    if (!n) document.getElementById('reviewList').innerHTML = '<div class="empty">No events pending review.</div>';
+  }, 300);
 }
 
 // ── Enrollment ──
 function previewPhoto(input) {
-  if (input.files && input.files[0]) {
-    const reader = new FileReader();
-    reader.onload = e => {
-      document.getElementById('photoDrop').style.backgroundImage = `url(${e.target.result})`;
-      document.getElementById('photoDrop').style.backgroundSize = 'cover';
-      document.getElementById('photoDrop').style.backgroundPosition = 'center';
-      document.getElementById('photoLabel').style.display = 'none';
-    };
-    reader.readAsDataURL(input.files[0]);
-  }
+  if (!input.files[0]) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const drop = document.getElementById('photoDrop');
+    drop.style.cssText += 'background-image:url(' + e.target.result + ');background-size:cover;background-position:center;height:140px;';
+    document.getElementById('photoLabel').style.display = 'none';
+  };
+  reader.readAsDataURL(input.files[0]);
 }
 
 function submitEnroll() {
   const name = document.getElementById('enrollName').value.trim();
   if (!name) { alert('Enter a name.'); return; }
   if (!document.getElementById('photoInput').files[0]) { alert('Upload a photo.'); return; }
-  const btn = document.querySelector('.btn-enroll');
-  btn.textContent = 'Enrolling…';
-  btn.disabled = true;
+  const btn = document.getElementById('enrollBtn');
+  btn.textContent = 'Enrolling…'; btn.disabled = true;
   setTimeout(() => {
-    btn.textContent = 'Enroll Worker';
-    btn.disabled = false;
+    btn.textContent = 'Enroll Worker'; btn.disabled = false;
     document.getElementById('enrollSuccess').style.display = 'block';
     document.getElementById('enrollName').value = '';
     document.getElementById('enrollTelegram').value = '';
-    document.getElementById('photoDrop').style.backgroundImage = '';
+    const drop = document.getElementById('photoDrop');
+    drop.style.backgroundImage = ''; drop.style.height = '';
     document.getElementById('photoLabel').style.display = '';
     document.getElementById('photoInput').value = '';
   }, 1000);
 }
-
-// ── Date picker does nothing in demo ──
-document.getElementById('datePicker').addEventListener('change', () => {});
 
 renderAttendance();
 renderReview();
