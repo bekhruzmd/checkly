@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Check In</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#181C22">
+<style>
+  :root{ --bg:#181C22; --panel:#242A32; --cream:#F2E7CE; --brass:#C6903F; --late:#E4572E; --ontime:#4C9A76; }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--cream);font-family:system-ui,sans-serif;
+       display:flex;flex-direction:column;align-items:center;padding:24px 16px;min-height:100vh;}
+  h1{font-size:20px;margin:0 0 20px;}
+  video, #photo-preview{width:100%;max-width:360px;border-radius:12px;background:#000;}
+  #status{margin-top:18px;font-size:15px;text-align:center;min-height:24px;}
+  #status.late{color:var(--late);} #status.ontime{color:var(--ontime);}
+  button{margin-top:20px;padding:14px 28px;font-size:16px;border:none;border-radius:10px;
+         background:var(--brass);color:#181C22;font-weight:600;cursor:pointer;width:100%;max-width:360px;}
+  button:disabled{opacity:.5;}
+  #locNote{font-size:12px;color:#8993A1;margin-top:8px;}
+</style>
+</head>
+<body>
+  <h1>Tap to Check In / Out</h1>
+  <div style="font-size:11px;color:#C6903F;margin-bottom:8px;letter-spacing:.5px;">DEMO MODE — cycles through all states</div>
+  <div id="shiftStatus" style="font-size:13px;color:#8993A1;margin-bottom:12px;min-height:18px;"></div>
+  <video id="cam" autoplay playsinline muted></video>
+  <canvas id="canvas" style="display:none;"></canvas>
+  <button id="captureBtn">Capture &amp; Submit</button>
+  <div id="locNote">Getting location…</div>
+  <div id="status"></div>
+
+<script>
+const API_BASE = "https://your-api-domain.example.com"; // set to your deployed API
+const DEMO_MODE = true; // remove before real deployment
+const DEMO_STATES = [
+  { ok: true,  data: { worker_name: 'Alisher Nazarov', event_type: 'check_in',  minutes_late: 0,  fee_charged: 0,    status: 'accepted' } },
+  { ok: true,  data: { worker_name: 'Alisher Nazarov', event_type: 'check_in',  minutes_late: 12, fee_charged: 6.00, status: 'accepted' } },
+  { ok: true,  data: { worker_name: 'Alisher Nazarov', event_type: 'check_out', minutes_late: null, fee_charged: 0,  status: 'accepted' } },
+  { ok: false, data: { detail: "Face not recognized. Try again or contact your manager." } },
+];
+let demoIdx = 0;
+
+// Demo: simulate worker already checked in today
+const shiftStatusEl = document.getElementById('shiftStatus');
+shiftStatusEl.textContent = "Today: checked in at 09:03 — currently IN";
+
+const video = document.getElementById('cam');
+const canvas = document.getElementById('canvas');
+const statusEl = document.getElementById('status');
+const locNote = document.getElementById('locNote');
+const btn = document.getElementById('captureBtn');
+
+let currentPosition = null;
+
+navigator.geolocation.watchPosition(
+  pos => {
+    currentPosition = pos;
+    locNote.textContent = `Location ready (±${Math.round(pos.coords.accuracy)}m)`;
+  },
+  err => { locNote.textContent = "Location permission needed to check in."; },
+  { enableHighAccuracy: true, maximumAge: 5000 }
+);
+
+navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
+  .then(stream => { video.srcObject = stream; })
+  .catch(() => { statusEl.textContent = "Camera permission needed."; });
+
+btn.addEventListener('click', async () => {
+  if (!currentPosition) {
+    statusEl.textContent = "Waiting for location…";
+    return;
+  }
+  btn.disabled = true;
+  statusEl.textContent = "Submitting…";
+
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  canvas.getContext('2d').drawImage(video, 0, 0);
+
+  canvas.toBlob(async (blob) => {
+    const form = new FormData();
+    form.append('photo', blob, 'capture.jpg');
+    form.append('latitude', currentPosition.coords.latitude);
+    form.append('longitude', currentPosition.coords.longitude);
+    // Note: reliable mock-location detection is Android-native only;
+    // a browser-based PWA can't call Location.isFromMockProvider().
+    // This is a known limitation -- see README.
+    form.append('mock_location', 'false');
+
+    try {
+      let res, data;
+      if (DEMO_MODE) {
+        await new Promise(r => setTimeout(r, 800)); // simulate network delay
+        const state = DEMO_STATES[demoIdx % DEMO_STATES.length];
+        demoIdx++;
+        res = { ok: state.ok };
+        data = state.data;
+      } else {
+        const r = await fetch(`${API_BASE}/attendance/check-in`, { method: 'POST', body: form });
+        res = r; data = await r.json();
+      }
+      // The captured frame is discarded here -- it is never written to
+      // disk or kept in memory beyond this request.
+      if (!res.ok) {
+        statusEl.textContent = data.detail || "Could not verify. Try again.";
+        statusEl.className = "";
+      } else if (data.event_type === 'check_in') {
+        const name = data.worker_name ? `${data.worker_name} — ` : '';
+        if (data.minutes_late > 0) {
+          statusEl.textContent = `${name}${data.minutes_late} min late, $${data.fee_charged} fee`;
+          statusEl.className = "late";
+          shiftStatusEl.textContent = "Today: currently IN (late)";
+        } else {
+          statusEl.textContent = `${name}checked in on time`;
+          statusEl.className = "ontime";
+          shiftStatusEl.textContent = "Today: currently IN";
+        }
+      } else {
+        const name = data.worker_name ? `${data.worker_name} — ` : '';
+        statusEl.textContent = `${name}checked out. Have a good day!`;
+        statusEl.className = "ontime";
+        shiftStatusEl.textContent = "Today: checked out";
+      }
+    } catch (e) {
+      statusEl.textContent = "Network error — try again.";
+    } finally {
+      btn.disabled = false;
+    }
+  }, 'image/jpeg', 0.85);
+});
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js');
+}
+</script>
+</body>
+</html>

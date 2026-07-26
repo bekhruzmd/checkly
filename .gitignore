@@ -1,0 +1,7 @@
+CLAUDE.md
+.claude/
+__pycache__/
+*.pyc
+.venv/
+.env
+*.egg-info/
