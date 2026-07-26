@@ -1,5 +1,10 @@
 # Attendance MVP
 
+## Live Demo
+
+- **Worker check-in:** https://bekhruzmd.github.io/checkly/
+- **Admin dashboard:** https://bekhruzmd.github.io/checkly/admin.html
+
 Face-check-in attendance system. No worker photos are stored anywhere —
 only a one-time face embedding (enrollment) and per-event metadata
 (timestamp, GPS, confidence score). Every check-in photo is processed
