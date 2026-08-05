@@ -6,33 +6,48 @@
 <title>Checkly — My Dashboard</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
-<meta name="theme-color" content="#181C22">
+<meta name="theme-color" content="#181511">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #181C22; --panel: #242A32; --border: #2E3540;
-    --cream: #F2E7CE; --muted: #8993A1;
-    --brass: #C6903F; --late: #E4572E; --ontime: #4C9A76;
+    --bg:      #181511;
+    --surface: #211E19;
+    --raised:  #2B2720;
+    --border:  #3A3530;
+    --text:    #D8E0EA;
+    --muted:   #636D7E;
+    --accent:  #5496D8;
+    --fee:     #C98A28;
+    --fail:    #D05448;
+    --pass:    #3C9E6F;
+
+    --font-display: 'Space Grotesk', system-ui, sans-serif;
+    --font-body:    'IBM Plex Sans', system-ui, sans-serif;
+    --font-mono:    'IBM Plex Mono', monospace;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
-    background: var(--bg); color: var(--cream);
-    font-family: system-ui, sans-serif;
+    background: var(--bg); color: var(--text);
+    font-family: var(--font-body);
     min-height: 100vh; padding-bottom: 40px;
   }
 
   /* ── Header ── */
   header {
     display: flex; align-items: center; justify-content: space-between;
-    padding: 14px 20px; background: var(--panel);
+    padding: 14px 20px; background: var(--surface);
     border-bottom: 1px solid var(--border);
     position: sticky; top: 0; z-index: 10;
   }
   .back-btn {
-    font-size: 14px; color: var(--brass); text-decoration: none; font-weight: 500;
+    font-size: 14px; color: var(--accent); text-decoration: none; font-weight: 500;
+    font-family: var(--font-body);
     display: flex; align-items: center; gap: 6px;
   }
-  .header-title { font-size: 15px; font-weight: 600; }
-  .header-date { font-size: 13px; color: var(--muted); }
+  .header-title { font-size: 15px; font-weight: 600; font-family: var(--font-display); }
+  .header-date { font-size: 13px; color: var(--muted); font-family: var(--font-mono); }
 
   /* ── Main layout ── */
   .container {
@@ -44,18 +59,19 @@
 
   /* ── Greeting ── */
   .greeting { padding: 4px 0; }
-  .greeting-name { font-size: 22px; font-weight: 700; }
-  .greeting-sub { font-size: 14px; color: var(--muted); margin-top: 3px; }
+  .greeting-name { font-size: 22px; font-weight: 700; font-family: var(--font-display); letter-spacing: -0.02em; }
+  .greeting-sub { font-size: 14px; color: var(--muted); margin-top: 3px; font-family: var(--font-mono); }
   @media (min-width: 768px) { .greeting-name { font-size: 26px; } }
 
   /* ── Cards ── */
   .card {
-    background: var(--panel); border: 1px solid var(--border);
-    border-radius: 14px; overflow: hidden;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; overflow: hidden;
   }
   .card-header {
-    padding: 14px 18px 0; font-size: 11px; font-weight: 600;
-    letter-spacing: .8px; color: var(--muted); text-transform: uppercase;
+    padding: 14px 18px 0; font-size: 11px; font-weight: 500;
+    letter-spacing: 0.07em; color: var(--muted); text-transform: uppercase;
+    font-family: var(--font-body);
   }
   .card-body { padding: 14px 18px 18px; }
 
@@ -71,43 +87,44 @@
     display: flex; align-items: center; justify-content: center;
     font-size: 14px; flex-shrink: 0;
   }
-  .tl-dot.done { background: rgba(76,154,118,.2); color: var(--ontime); }
-  .tl-dot.pending { background: rgba(137,147,161,.1); color: var(--muted); }
-  .tl-dot.late-dot { background: rgba(228,87,46,.15); color: var(--late); }
-  .tl-label { font-size: 13px; color: var(--muted); }
-  .tl-value { font-size: 16px; font-weight: 600; margin-top: 1px; }
+  .tl-dot.done { background: rgba(60,158,111,.2); color: var(--pass); }
+  .tl-dot.pending { background: rgba(99,109,126,.12); color: var(--muted); }
+  .tl-dot.late-dot { background: rgba(208,84,72,.15); color: var(--fail); }
+  .tl-label { font-size: 13px; color: var(--muted); font-family: var(--font-body); }
+  .tl-value { font-size: 16px; font-weight: 600; margin-top: 1px; font-family: var(--font-mono); }
   .tl-meta { margin-left: auto; text-align: right; }
   .badge {
     display: inline-block; padding: 3px 10px; border-radius: 20px;
     font-size: 12px; font-weight: 500;
   }
-  .badge-ontime { background: rgba(76,154,118,.15); color: var(--ontime); }
-  .badge-late   { background: rgba(228,87,46,.15);  color: var(--late); }
-  .badge-pending{ background: rgba(137,147,161,.1); color: var(--muted); }
+  .badge-ontime { background: rgba(60,158,111,.14); color: var(--pass); }
+  .badge-late   { background: rgba(208,84,72,.14);  color: var(--fail); }
+  .badge-pending{ background: rgba(99,109,126,.12); color: var(--muted); }
 
   .fee-row {
     margin-top: 12px; padding: 10px 14px;
-    background: rgba(228,87,46,.08); border-radius: 8px;
+    background: rgba(201,138,40,.08); border-radius: 8px;
     display: flex; justify-content: space-between; align-items: center;
     font-size: 14px; color: var(--muted);
   }
-  .fee-row strong { color: var(--late); font-size: 16px; }
+  .fee-row strong { color: var(--fee); font-size: 16px; font-family: var(--font-mono); }
 
   /* ── Progress bar ── */
   .shift-progress { margin-top: 14px; }
   .progress-label { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
   .progress-track { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
-  .progress-fill  { height: 100%; background: var(--ontime); border-radius: 3px; transition: width .5s; }
+  .progress-fill  { height: 100%; background: var(--accent); border-radius: 3px; transition: width .5s; }
 
   /* ── Week table ── */
   .week-table { width: 100%; border-collapse: collapse; font-size: 14px; }
   .week-table th {
     text-align: left; font-size: 11px; color: var(--muted);
-    text-transform: uppercase; letter-spacing: .5px; padding: 6px 0; font-weight: 500;
+    text-transform: uppercase; letter-spacing: 0.06em; padding: 6px 0; font-weight: 500;
+    font-family: var(--font-body);
   }
-  .week-table td { padding: 9px 0; border-top: 1px solid var(--border); }
+  .week-table td { padding: 9px 0; border-top: 1px solid var(--border); font-family: var(--font-mono); font-size: 13px; }
   .week-table td:last-child { text-align: right; }
-  .today-row-week { font-weight: 600; color: var(--cream); }
+  .today-row-week { font-weight: 500; color: var(--text); }
 
   /* ── Two-column on tablet+ ── */
   .two-col { display: grid; grid-template-columns: 1fr; gap: 14px; }
@@ -116,12 +133,12 @@
   /* ── Action button ── */
   .btn-checkout {
     width: 100%; padding: 15px; font-size: 16px; font-weight: 600;
-    border: none; border-radius: 12px; background: var(--panel);
-    border: 1px solid var(--border); color: var(--cream);
-    cursor: pointer; transition: background .2s;
+    border: 1px solid var(--border); border-radius: 10px; background: var(--surface);
+    color: var(--text); font-family: var(--font-display);
+    cursor: pointer; transition: background .15s;
   }
-  .btn-checkout:hover { background: var(--border); }
-  .btn-checkout.checkin-mode { background: var(--brass); color: #181C22; border-color: var(--brass); }
+  .btn-checkout:hover { background: var(--raised); }
+  .btn-checkout.checkin-mode { background: var(--accent); color: #fff; border-color: transparent; }
 </style>
 </head>
 <body>
@@ -189,15 +206,15 @@
       <div class="card-body">
         <div style="display:flex;gap:20px;flex-wrap:wrap">
           <div>
-            <div style="font-size:28px;font-weight:700;color:var(--ontime)" id="statOnTime">18</div>
+            <div style="font-size:28px;font-weight:700;color:var(--pass);font-family:var(--font-display)" id="statOnTime">18</div>
             <div style="font-size:12px;color:var(--muted);margin-top:2px">On time</div>
           </div>
           <div>
-            <div style="font-size:28px;font-weight:700;color:var(--late)" id="statLate">2</div>
+            <div style="font-size:28px;font-weight:700;color:var(--fail);font-family:var(--font-display)" id="statLate">2</div>
             <div style="font-size:12px;color:var(--muted);margin-top:2px">Late</div>
           </div>
           <div>
-            <div style="font-size:28px;font-weight:700" id="statFees">$9.00</div>
+            <div style="font-size:28px;font-weight:700;font-family:var(--font-mono)" id="statFees">$9.00</div>
             <div style="font-size:12px;color:var(--muted);margin-top:2px">Total fees</div>
           </div>
         </div>

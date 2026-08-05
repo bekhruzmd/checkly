@@ -7,3 +7,5 @@ insightface==0.7.3
 onnxruntime==1.19.2
 opencv-python-headless==4.10.0.84
 numpy==1.26.4
+apscheduler==3.10.4
+requests==2.32.3

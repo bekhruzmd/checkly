@@ -66,6 +66,18 @@ def cosine_similarity(a: list[float], b: list[float]) -> float:
     return float(np.dot(a_arr, b_arr) / (np.linalg.norm(a_arr) * np.linalg.norm(b_arr)))
 
 
+def get_embedding_from_frame(frame: np.ndarray) -> list[float] | None:
+    """
+    Extract a face embedding from an already-decoded cv2 frame (numpy array).
+    Returns None if no face is detected. Used by the edge device pipeline
+    so camera frames don't need to be re-encoded to bytes.
+    """
+    faces = _face_app.get(frame)
+    if not faces:
+        return None
+    return faces[0].normed_embedding.tolist()
+
+
 def match_face(photo_bytes: bytes, enrolled_workers: list[tuple[int, list[float]]]):
     """
     enrolled_workers: list of (worker_id, embedding) for all active workers.

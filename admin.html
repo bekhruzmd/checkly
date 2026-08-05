@@ -5,214 +5,647 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Checkly Admin</title>
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
-<meta name="theme-color" content="#181C22">
+<meta name="theme-color" content="#181511">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg: #181C22; --panel: #242A32; --border: #2E3540;
-    --cream: #F2E7CE; --muted: #8993A1;
-    --brass: #C6903F; --late: #E4572E; --ontime: #4C9A76; --review: #C6903F;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: var(--bg); color: var(--cream); font-family: system-ui, sans-serif; min-height: 100vh; }
+:root {
+  --bg:      #181511;
+  --surface: #211E19;
+  --raised:  #2B2720;
+  --border:  #3A3530;
+  --text:    #D8E0EA;
+  --muted:   #636D7E;
+  --accent:  #5496D8;
+  --fee:     #C98A28;
+  --fail:    #D05448;
+  --pass:    #3C9E6F;
 
-  /* ── Top header ── */
-  .topbar {
-    background: var(--panel); border-bottom: 1px solid var(--border);
-    padding: 14px 20px; display: flex; align-items: center; justify-content: space-between;
-    position: sticky; top: 0; z-index: 20;
-  }
-  .topbar h1 { font-size: 17px; font-weight: 600; }
-  .demo-badge { font-size: 11px; color: var(--brass); letter-spacing: .5px; }
+  --font-display: 'Space Grotesk', system-ui, sans-serif;
+  --font-body:    'IBM Plex Sans', system-ui, sans-serif;
+  --font-mono:    'IBM Plex Mono', monospace;
+}
 
-  /* ── Layout: mobile = stacked, desktop = sidebar ── */
-  .layout { display: flex; min-height: calc(100vh - 50px); }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.5;
+  min-height: 100vh;
+}
 
-  /* Desktop sidebar */
-  .sidebar {
-    display: none;
-    width: 200px; flex-shrink: 0;
-    background: var(--panel); border-right: 1px solid var(--border);
-    padding: 24px 0;
-    position: sticky; top: 50px; height: calc(100vh - 50px); overflow-y: auto;
-  }
-  @media (min-width: 768px) { .sidebar { display: block; } }
+/* ── Topbar ── */
+.topbar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 20px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 30;
+}
+.topbar-brand {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.topbar-brand svg { color: var(--accent); }
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.demo-pill {
+  background: rgba(84,150,216,.12);
+  color: var(--accent);
+  border: 1px solid rgba(84,150,216,.25);
+  border-radius: 20px;
+  padding: 2px 10px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
 
-  .sidebar-item {
-    display: flex; align-items: center; gap: 10px;
-    padding: 11px 20px; font-size: 14px; cursor: pointer;
-    color: var(--muted); border-left: 3px solid transparent;
-    background: none; border-top: none; border-right: none; border-bottom: none;
-    width: 100%; text-align: left;
-  }
-  .sidebar-item.active { color: var(--cream); border-left-color: var(--brass); background: rgba(198,144,63,.06); }
-  .sidebar-item:hover:not(.active) { background: rgba(255,255,255,.03); }
-  .sidebar-badge {
-    margin-left: auto; background: rgba(228,87,46,.2); color: var(--late);
-    border-radius: 20px; padding: 1px 7px; font-size: 11px;
-  }
+/* ── Shift bar (signature element) ── */
+.shift-bar-wrap {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 20px 8px;
+  position: sticky;
+  top: 48px;
+  z-index: 20;
+}
+.shift-bar-label {
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: var(--muted);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 5px;
+  display: flex;
+  justify-content: space-between;
+}
+#shiftBarCanvas {
+  width: 100%;
+  height: 32px;
+  display: block;
+  border-radius: 4px;
+  cursor: crosshair;
+}
+#shiftBarTooltip {
+  position: fixed;
+  background: var(--raised);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-family: var(--font-mono);
+  color: var(--text);
+  pointer-events: none;
+  display: none;
+  z-index: 100;
+  white-space: nowrap;
+}
 
-  /* Main content */
-  .main { flex: 1; padding: 20px 16px; max-width: 900px; }
-  @media (min-width: 768px) { .main { padding: 28px 28px; } }
+/* ── Layout ── */
+.layout {
+  display: flex;
+  min-height: calc(100vh - 90px);
+}
 
-  .tab { display: none; }
-  .tab.active { display: block; }
+/* ── Sidebar ── */
+.sidebar {
+  display: none;
+  width: 196px;
+  flex-shrink: 0;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: 16px 0;
+  position: sticky;
+  top: 90px;
+  height: calc(100vh - 90px);
+  overflow-y: auto;
+}
+@media (min-width: 768px) { .sidebar { display: block; } }
 
-  /* ── Bottom nav (mobile only) ── */
-  .bottom-nav {
-    position: fixed; bottom: 0; left: 0; right: 0;
-    background: var(--panel); border-top: 1px solid var(--border);
-    display: flex; z-index: 20;
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-  @media (min-width: 768px) { .bottom-nav { display: none; } }
-  .nav-btn {
-    flex: 1; padding: 10px 4px 8px; background: none; border: none;
-    color: var(--muted); font-size: 11px; cursor: pointer;
-    display: flex; flex-direction: column; align-items: center; gap: 3px;
-  }
-  .nav-btn.active { color: var(--brass); }
-  .nav-icon { font-size: 20px; line-height: 1; }
+.sidebar-section {
+  padding: 0 12px;
+  margin-bottom: 4px;
+}
+.sidebar-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  text-transform: uppercase;
+  padding: 12px 8px 6px;
+  display: block;
+}
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 10px;
+  font-size: 14px;
+  font-family: var(--font-body);
+  font-weight: 400;
+  cursor: pointer;
+  color: var(--muted);
+  border-radius: 7px;
+  background: none;
+  border: none;
+  width: 100%;
+  text-align: left;
+  transition: background 0.12s, color 0.12s;
+}
+.sidebar-item.active {
+  color: var(--text);
+  background: rgba(84,150,216,.1);
+}
+.sidebar-item.active .nav-icon-svg { color: var(--accent); }
+.sidebar-item:hover:not(.active) { background: rgba(255,255,255,.04); color: var(--text); }
+.sidebar-badge {
+  margin-left: auto;
+  background: rgba(208,84,72,.18);
+  color: var(--fail);
+  border-radius: 20px;
+  padding: 1px 7px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+}
+.nav-icon-svg { width: 15px; height: 15px; flex-shrink: 0; color: var(--muted); }
 
-  /* Bottom nav spacer on mobile */
-  @media (max-width: 767px) { body { padding-bottom: 70px; } }
+/* ── Main ── */
+.main {
+  flex: 1;
+  padding: 24px 20px;
+  max-width: 960px;
+  min-width: 0;
+}
+@media (min-width: 768px) { .main { padding: 28px 32px; } }
 
-  /* ── Controls row ── */
-  .controls {
-    display: flex; align-items: center; gap: 10px; margin-bottom: 18px; flex-wrap: wrap;
-  }
-  .controls label { font-size: 13px; color: var(--muted); }
-  input[type=date] {
-    background: var(--panel); border: 1px solid var(--border);
-    color: var(--cream); padding: 7px 10px; border-radius: 8px; font-size: 14px;
-  }
-  .summary {
-    margin-left: auto; font-size: 13px; color: var(--muted);
-    display: flex; gap: 12px; flex-wrap: wrap;
-  }
-  .summary-item { white-space: nowrap; }
-  .summary-item span { font-weight: 600; color: var(--cream); }
+.tab { display: none; }
+.tab.active { display: block; }
 
-  /* ── Table ── */
-  .table-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid var(--border); }
-  table { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 560px; }
-  th {
-    text-align: left; color: var(--muted); font-weight: 500;
-    font-size: 12px; text-transform: uppercase; letter-spacing: .5px;
-    padding: 10px 14px; border-bottom: 1px solid var(--border);
-    background: var(--panel); white-space: nowrap;
-  }
-  td { padding: 11px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
-  tr:last-child td { border-bottom: none; }
-  tr:hover td { background: rgba(255,255,255,.02); }
+/* ── Section header ── */
+.section-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.section-title {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.section-actions { display: flex; gap: 8px; align-items: center; }
 
-  /* ── Badges ── */
-  .badge {
-    display: inline-block; padding: 3px 9px; border-radius: 20px;
-    font-size: 12px; font-weight: 500; white-space: nowrap;
-  }
-  .badge-ontime  { background: rgba(76,154,118,.15);  color: var(--ontime); }
-  .badge-late    { background: rgba(228,87,46,.15);   color: var(--late); }
-  .badge-review  { background: rgba(198,144,63,.15);  color: var(--review); }
-  .badge-absent  { background: rgba(137,147,161,.1);  color: var(--muted); }
-  .badge-morning { background: rgba(198,144,63,.1);   color: var(--brass); }
-  .badge-night   { background: rgba(137,147,161,.12); color: var(--muted); }
-  .fee { color: var(--late); font-weight: 600; }
+/* ── KPI row ── */
+.kpi-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 24px;
+}
+@media (min-width: 600px) { .kpi-row { grid-template-columns: repeat(4, 1fr); } }
 
-  /* ── Review cards ── */
-  .review-card {
-    background: var(--panel); border: 1px solid var(--border);
-    border-radius: 12px; padding: 16px 18px; margin-bottom: 12px;
-    display: flex; align-items: flex-start; gap: 14px; flex-wrap: wrap;
-  }
-  .review-meta { flex: 1; min-width: 180px; }
-  .review-name { font-weight: 600; font-size: 15px; margin-bottom: 3px; }
-  .review-detail { font-size: 13px; color: var(--muted); line-height: 1.5; }
-  .review-reason { margin-top: 5px; font-size: 12px; color: var(--review); }
-  .confidence { font-size: 12px; color: var(--muted); text-align: center; min-width: 56px; }
-  .confidence strong { display: block; font-size: 20px; font-weight: 700; color: var(--review); }
-  .review-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-  .btn { padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; border: none; cursor: pointer; }
-  .btn-approve { background: rgba(76,154,118,.2); color: var(--ontime); }
-  .btn-override { background: rgba(228,87,46,.15); color: var(--late); }
-  .btn-approve:hover { background: rgba(76,154,118,.35); }
-  .btn-override:hover { background: rgba(228,87,46,.3); }
+.kpi-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+.kpi-label {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+.kpi-value {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+.kpi-value.accent { color: var(--accent); }
+.kpi-value.fail   { color: var(--fail); }
+.kpi-value.fee    { color: var(--fee); }
+.kpi-value.pass   { color: var(--pass); }
+.kpi-sub {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 4px;
+  font-family: var(--font-mono);
+}
 
-  /* ── Enrollment form ── */
-  .form-card {
-    background: var(--panel); border: 1px solid var(--border);
-    border-radius: 12px; padding: 24px; max-width: 480px;
-  }
-  .form-row { margin-bottom: 18px; }
-  .form-row label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
-  .form-row input, .form-row select {
-    width: 100%; background: var(--bg); border: 1px solid var(--border);
-    color: var(--cream); padding: 10px 12px; border-radius: 8px; font-size: 14px;
-  }
-  .form-row input:focus, .form-row select:focus { outline: none; border-color: var(--brass); }
-  .photo-drop {
-    border: 1.5px dashed var(--border); border-radius: 8px;
-    padding: 32px; text-align: center; color: var(--muted);
-    font-size: 14px; cursor: pointer;
-  }
-  .photo-drop:hover { border-color: var(--brass); color: var(--brass); }
-  .btn-enroll {
-    width: 100%; padding: 12px; background: var(--brass); color: #181C22;
-    border: none; border-radius: 8px; font-size: 15px; font-weight: 600;
-    cursor: pointer; margin-top: 4px;
-  }
-  .btn-enroll:disabled { opacity: .5; }
-  .field-note { font-size: 12px; color: var(--muted); margin-top: 4px; }
-  .enroll-success {
-    display: none; background: rgba(76,154,118,.12);
-    border: 1px solid rgba(76,154,118,.3); border-radius: 8px;
-    padding: 14px; text-align: center; color: var(--ontime);
-    font-size: 14px; margin-top: 16px;
-  }
+/* ── Controls row ── */
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.controls label {
+  font-size: 12px;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
+input[type=date] {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 6px 10px;
+  border-radius: 7px;
+  font-size: 13px;
+  font-family: var(--font-mono);
+}
+input[type=date]:focus { outline: none; border-color: var(--accent); }
 
-  .section-title { font-size: 17px; font-weight: 600; margin-bottom: 16px; }
-  .empty { text-align: center; color: var(--muted); padding: 48px 0; font-size: 14px; }
+.summary-chips {
+  margin-left: auto;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.chip {
+  font-size: 12px;
+  font-family: var(--font-mono);
+  color: var(--muted);
+  white-space: nowrap;
+}
+.chip b { font-weight: 500; }
+.chip.c-pass b { color: var(--pass); }
+.chip.c-fail b { color: var(--fail); }
+.chip.c-fee  b { color: var(--fee); }
+
+/* ── Table ── */
+.table-wrap {
+  overflow-x: auto;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  min-width: 560px;
+}
+thead th {
+  text-align: left;
+  color: var(--muted);
+  font-weight: 500;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  white-space: nowrap;
+  font-family: var(--font-body);
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: rgba(255,255,255,.02); }
+.mono { font-family: var(--font-mono); font-size: 13px; }
+.worker-name { font-weight: 500; font-size: 14px; }
+
+/* ── Badges ── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 500;
+  font-family: var(--font-body);
+  white-space: nowrap;
+}
+.badge-ontime  { background: rgba(60,158,111,.14); color: var(--pass); }
+.badge-late    { background: rgba(208,84,72,.14);  color: var(--fail); }
+.badge-review  { background: rgba(201,138,40,.14); color: var(--fee); }
+.badge-absent  { background: rgba(99,109,126,.1);  color: var(--muted); }
+.badge-morning { background: rgba(84,150,216,.12); color: var(--accent); }
+.badge-night   { background: rgba(99,109,126,.12); color: var(--muted); }
+.badge-passed  { background: rgba(60,158,111,.14); color: var(--pass); }
+.badge-failed  { background: rgba(208,84,72,.14);  color: var(--fail); }
+.badge-excused { background: rgba(201,138,40,.14); color: var(--fee); }
+.badge-pending { background: rgba(84,150,216,.1);  color: var(--accent); }
+
+.fee-val  { color: var(--fee); font-family: var(--font-mono); font-weight: 500; }
+.conf-val { font-family: var(--font-mono); color: var(--muted); }
+.conf-hi  { color: var(--pass); }
+.conf-mid { color: var(--fee); }
+.conf-lo  { color: var(--fail); }
+
+/* ── Review cards ── */
+.review-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px 18px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.review-meta { flex: 1; min-width: 180px; }
+.review-name { font-weight: 600; font-size: 15px; font-family: var(--font-display); margin-bottom: 3px; }
+.review-detail { font-size: 13px; color: var(--muted); line-height: 1.5; font-family: var(--font-mono); }
+.review-reason { margin-top: 5px; font-size: 12px; color: var(--fee); }
+.confidence { font-size: 12px; color: var(--muted); text-align: center; min-width: 56px; }
+.confidence strong { display: block; font-size: 22px; font-weight: 700; font-family: var(--font-display); }
+.review-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+/* ── Buttons ── */
+.btn {
+  padding: 7px 14px;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: var(--font-body);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.btn-approve {
+  background: rgba(60,158,111,.15);
+  color: var(--pass);
+  border-color: rgba(60,158,111,.2);
+}
+.btn-approve:hover { background: rgba(60,158,111,.28); }
+.btn-override {
+  background: rgba(208,84,72,.12);
+  color: var(--fail);
+  border-color: rgba(208,84,72,.2);
+}
+.btn-override:hover { background: rgba(208,84,72,.25); }
+.btn-excuse {
+  background: rgba(201,138,40,.12);
+  color: var(--fee);
+  border-color: rgba(201,138,40,.2);
+  font-size: 12px;
+  padding: 5px 11px;
+}
+.btn-excuse:hover { background: rgba(201,138,40,.25); }
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+  border-color: transparent;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  width: 100%;
+  margin-top: 4px;
+}
+.btn-primary:hover { background: #4386c4; }
+.btn-primary:disabled { opacity: .45; }
+
+/* ── Enrollment form ── */
+.form-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 480px;
+}
+.form-row { margin-bottom: 18px; }
+.form-row label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+.form-row input,
+.form-row select {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 9px 12px;
+  border-radius: 7px;
+  font-size: 14px;
+  font-family: var(--font-body);
+}
+.form-row input:focus,
+.form-row select:focus { outline: none; border-color: var(--accent); }
+.photo-drop {
+  border: 1.5px dashed var(--border);
+  border-radius: 8px;
+  padding: 32px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 14px;
+  cursor: pointer;
+  transition: border-color 0.12s, color 0.12s;
+}
+.photo-drop:hover { border-color: var(--accent); color: var(--accent); }
+.field-note { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.enroll-success {
+  display: none;
+  background: rgba(60,158,111,.1);
+  border: 1px solid rgba(60,158,111,.25);
+  border-radius: 8px;
+  padding: 14px;
+  text-align: center;
+  color: var(--pass);
+  font-size: 14px;
+  margin-top: 16px;
+}
+
+/* ── Presence checks ── */
+.presence-table { margin-top: 24px; }
+.presence-table .section-header { margin-bottom: 12px; }
+
+/* ── Excuse rate bars ── */
+.excuse-table { margin-top: 0; }
+.rate-bar-track {
+  width: 80px;
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  display: inline-block;
+  vertical-align: middle;
+  overflow: hidden;
+}
+.rate-bar-fill {
+  height: 100%;
+  background: var(--fee);
+  border-radius: 3px;
+}
+.rate-high .rate-bar-fill { background: var(--fail); }
+
+/* ── Empty state ── */
+.empty {
+  text-align: center;
+  color: var(--muted);
+  padding: 48px 0;
+  font-size: 14px;
+}
+
+/* ── Mobile bottom nav ── */
+.bottom-nav {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  display: flex;
+  z-index: 30;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+@media (min-width: 768px) { .bottom-nav { display: none; } }
+@media (max-width: 767px) { body { padding-bottom: 64px; } }
+
+.nav-btn {
+  flex: 1;
+  padding: 9px 4px 7px;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 10px;
+  font-family: var(--font-body);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  transition: color 0.12s;
+}
+.nav-btn.active { color: var(--accent); }
+.nav-icon { font-size: 18px; line-height: 1; }
 </style>
 </head>
 <body>
 
+<div id="shiftBarTooltip"></div>
+
+<!-- Topbar -->
 <div class="topbar">
-  <h1>Checkly Admin</h1>
-  <span class="demo-badge">DEMO MODE</span>
+  <div class="topbar-brand">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+    Checkly
+  </div>
+  <div class="topbar-right">
+    <span id="liveClock" style="font-family:var(--font-mono);font-size:13px"></span>
+    <span class="demo-pill">DEMO</span>
+  </div>
+</div>
+
+<!-- 24-Hour Shift Bar -->
+<div class="shift-bar-wrap">
+  <div class="shift-bar-label">
+    <span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>24:00</span>
+  </div>
+  <canvas id="shiftBarCanvas" height="32"></canvas>
 </div>
 
 <div class="layout">
 
-  <!-- Desktop sidebar -->
+  <!-- Sidebar -->
   <nav class="sidebar">
-    <button class="sidebar-item active" onclick="switchTab('attendance', this)">
-      📋 Attendance
-    </button>
-    <button class="sidebar-item" onclick="switchTab('review', this)">
-      ⚠️ Manual Review
-      <span class="sidebar-badge" id="sidebarReviewCount">3</span>
-    </button>
-    <button class="sidebar-item" onclick="switchTab('enroll', this)">
-      ➕ Enroll Worker
-    </button>
+    <div class="sidebar-section">
+      <span class="sidebar-label">Operations</span>
+      <button class="sidebar-item active" onclick="switchTab('attendance', this)">
+        <svg class="nav-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Attendance
+      </button>
+      <button class="sidebar-item" onclick="switchTab('presence', this)">
+        <svg class="nav-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        Presence Checks
+        <span class="sidebar-badge" id="sidebarPresenceCount">2</span>
+      </button>
+      <button class="sidebar-item" onclick="switchTab('review', this)">
+        <svg class="nav-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        Manual Review
+        <span class="sidebar-badge" id="sidebarReviewCount">3</span>
+      </button>
+    </div>
+    <div class="sidebar-section">
+      <span class="sidebar-label">Workforce</span>
+      <button class="sidebar-item" onclick="switchTab('enroll', this)">
+        <svg class="nav-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+        Enroll Worker
+      </button>
+      <button class="sidebar-item" onclick="switchTab('managers', this)">
+        <svg class="nav-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        Excuse Rates
+      </button>
+    </div>
   </nav>
 
   <!-- Main content -->
   <div class="main">
 
-    <!-- Attendance -->
+    <!-- ATTENDANCE -->
     <div id="tab-attendance" class="tab active">
-      <div class="section-title">Attendance</div>
-      <div class="controls">
-        <label>Date</label>
-        <input type="date" id="datePicker" value="2026-07-26">
-        <div class="summary">
-          <div class="summary-item"><span>48</span> workers</div>
-          <div class="summary-item" style="color:var(--ontime)"><span style="color:var(--ontime)">41</span> on time</div>
-          <div class="summary-item" style="color:var(--late)"><span style="color:var(--late)">5</span> late</div>
-          <div class="summary-item" style="color:var(--review)"><span style="color:var(--review)">3</span> flagged</div>
+      <div class="section-header">
+        <div class="section-title">Attendance</div>
+        <div class="section-actions">
+          <span style="font-size:12px;color:var(--muted)">Date</span>
+          <input type="date" id="datePicker" value="2026-07-30">
         </div>
       </div>
+
+      <div class="kpi-row">
+        <div class="kpi-card">
+          <div class="kpi-label">Checked in</div>
+          <div class="kpi-value accent">48</div>
+          <div class="kpi-sub">of 60 workers</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Late arrivals</div>
+          <div class="kpi-value fail">5</div>
+          <div class="kpi-sub">avg 11 min late</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Fees today</div>
+          <div class="kpi-value fee">$28.50</div>
+          <div class="kpi-sub">5 workers fined</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Review queue</div>
+          <div class="kpi-value" style="color:var(--fee)">3</div>
+          <div class="kpi-sub">need action</div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <div class="summary-chips">
+          <span class="chip c-pass"><b id="sumOnTime">41</b> on time</span>
+          <span class="chip c-fail"><b id="sumLate">5</b> late</span>
+          <span class="chip"><b id="sumAbsent">7</b> absent</span>
+          <span class="chip c-fee"><b id="sumFlagged">3</b> flagged</span>
+        </div>
+      </div>
+
       <div class="table-wrap">
         <table>
           <thead>
@@ -231,16 +664,76 @@
       </div>
     </div>
 
-    <!-- Manual Review -->
+    <!-- PRESENCE CHECKS -->
+    <div id="tab-presence" class="tab">
+      <div class="section-header">
+        <div class="section-title">Presence Checks</div>
+        <span style="font-size:13px;color:var(--muted)">Idle-triggered desk confirmations</span>
+      </div>
+
+      <div class="kpi-row">
+        <div class="kpi-card">
+          <div class="kpi-label">Triggered today</div>
+          <div class="kpi-value accent">6</div>
+          <div class="kpi-sub">across both shifts</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Passed</div>
+          <div class="kpi-value pass">3</div>
+          <div class="kpi-sub">selfie confirmed</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Failed</div>
+          <div class="kpi-value fail">2</div>
+          <div class="kpi-sub">no response / mismatch</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Excused</div>
+          <div class="kpi-value fee">1</div>
+          <div class="kpi-sub">manager approved</div>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Worker</th>
+              <th>Shift</th>
+              <th>Triggered</th>
+              <th>Window</th>
+              <th>Responded</th>
+              <th>Result</th>
+              <th>Confidence</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="presenceBody"></tbody>
+        </table>
+      </div>
+
+      <p style="margin-top:16px;font-size:12px;color:var(--muted);line-height:1.6">
+        ⚠ Night-shift confidence scores are not yet validated against real desk lighting conditions.
+        Do not treat night-shift failures as definitive until tested. See schema comments.
+      </p>
+    </div>
+
+    <!-- MANUAL REVIEW -->
     <div id="tab-review" class="tab">
-      <div class="section-title">Manual Review</div>
-      <p style="font-size:13px;color:var(--muted);margin-bottom:18px">Flagged for low confidence, failed liveness, or out-of-geofence. Approve to accept or override to adjust.</p>
+      <div class="section-header">
+        <div class="section-title">Manual Review</div>
+      </div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:18px;line-height:1.6">
+        Flagged for low confidence, failed liveness, or outside geofence. Approve to accept or override to adjust the record.
+      </p>
       <div id="reviewList"></div>
     </div>
 
-    <!-- Enroll -->
+    <!-- ENROLL -->
     <div id="tab-enroll" class="tab">
-      <div class="section-title">Enroll New Worker</div>
+      <div class="section-header">
+        <div class="section-title">Enroll Worker</div>
+      </div>
       <div class="form-card">
         <div class="form-row">
           <label>Full name</label>
@@ -254,7 +747,7 @@
           </select>
         </div>
         <div class="form-row">
-          <label>Telegram chat ID <span style="font-weight:400;color:var(--muted)">(optional)</span></label>
+          <label>Telegram chat ID <span style="font-weight:400;color:var(--muted);text-transform:none">(optional)</span></label>
           <input type="number" id="enrollTelegram" placeholder="e.g. 123456789">
         </div>
         <div class="form-row">
@@ -263,23 +756,52 @@
             <div id="photoLabel">Tap to upload a clear front-facing photo</div>
             <input type="file" id="photoInput" accept="image/*" style="display:none" onchange="previewPhoto(this)">
           </div>
-          <p class="field-note">One face only. Photo is converted to a face embedding and immediately discarded — never stored.</p>
+          <p class="field-note">One face only. Converted to a 512-d embedding and immediately discarded — never stored.</p>
         </div>
-        <button class="btn-enroll" id="enrollBtn" onclick="submitEnroll()">Enroll Worker</button>
-        <div class="enroll-success" id="enrollSuccess">✓ Worker enrolled successfully.</div>
+        <button class="btn btn-primary" id="enrollBtn" onclick="submitEnroll()">Enroll Worker</button>
+        <div class="enroll-success" id="enrollSuccess">Worker enrolled successfully.</div>
+      </div>
+    </div>
+
+    <!-- MANAGER EXCUSE RATES -->
+    <div id="tab-managers" class="tab">
+      <div class="section-header">
+        <div class="section-title">Excuse Rates</div>
+        <span style="font-size:13px;color:var(--muted)">Excuses given ÷ total failures seen</span>
+      </div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.6">
+        High rates indicate a manager excusing an unusually large share of failures.
+        No threshold is enforced automatically — this is an observation tool.
+      </p>
+      <div class="table-wrap excuse-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Manager</th>
+              <th>Excused</th>
+              <th>Total failures</th>
+              <th>Rate</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="excuseBody"></tbody>
+        </table>
       </div>
     </div>
 
   </div>
 </div>
 
-<!-- Mobile bottom nav -->
+<!-- Mobile nav -->
 <nav class="bottom-nav">
   <button class="nav-btn active" id="mnav-attendance" onclick="switchTab('attendance', this, true)">
     <span class="nav-icon">📋</span>Attendance
   </button>
+  <button class="nav-btn" id="mnav-presence" onclick="switchTab('presence', this, true)">
+    <span class="nav-icon">🕐</span>Presence
+  </button>
   <button class="nav-btn" id="mnav-review" onclick="switchTab('review', this, true)">
-    <span class="nav-icon">⚠️</span>Review <span id="mobileReviewBadge" style="color:var(--late)"> 3</span>
+    <span class="nav-icon">⚠️</span>Review
   </button>
   <button class="nav-btn" id="mnav-enroll" onclick="switchTab('enroll', this, true)">
     <span class="nav-icon">➕</span>Enroll
@@ -287,6 +809,7 @@
 </nav>
 
 <script>
+// ── Demo data ──
 const WORKERS = [
   { name:'Alisher Nazarov',    shift:'morning', in:'09:02', out:'17:05', late:0,  fee:0,     status:'accepted' },
   { name:'Dilnoza Yusupova',   shift:'morning', in:'09:14', out:'17:01', late:9,  fee:4.50,  status:'accepted' },
@@ -304,29 +827,203 @@ const WORKERS = [
 
 const REVIEW_EVENTS = [
   { id:101, name:'Nodir Xolmatov',     shift:'morning', time:'09:08', type:'check_in', confidence:0.63, reasons:['Confidence below threshold (0.63)'] },
-  { id:102, name:'Feruza Abdullayeva', shift:'night',   time:'21:01', type:'check_in', confidence:0.67, reasons:['Outside geofence (210m from office)'] },
-  { id:103, name:'Kamola Ergasheva',   shift:'morning', time:'09:27', type:'check_in', confidence:0.61, reasons:['Confidence below threshold (0.61)', 'Liveness check failed'] },
+  { id:102, name:'Feruza Abdullayeva', shift:'night',   time:'21:01', type:'check_in', confidence:0.67, reasons:['Outside geofence (210 m from office)'] },
+  { id:103, name:'Kamola Ergasheva',   shift:'morning', time:'09:27', type:'check_in', confidence:0.61, reasons:['Confidence 0.61', 'Liveness check failed'] },
 ];
 
+const PRESENCE_CHECKS = [
+  { id:1, name:'Bobur Toshmatov',    shift:'morning', triggered:'14:23:11', window:180, responded:'14:24:40', result:'passed',  confidence:0.78 },
+  { id:2, name:'Kamol Djuraev',      shift:'morning', triggered:'14:45:33', window:180, responded:null,       result:'failed',  confidence:null },
+  { id:3, name:'Sarvinoz Umarova',   shift:'morning', triggered:'15:10:05', window:180, responded:'15:11:22', result:'passed',  confidence:0.82 },
+  { id:4, name:'Dilnoza Yusupova',   shift:'morning', triggered:'15:55:48', window:180, responded:'15:57:01', result:'passed',  confidence:0.74 },
+  { id:5, name:'Ulugbek Sobirov',    shift:'night',   triggered:'23:12:09', window:180, responded:null,       result:'failed',  confidence:null },
+  { id:6, name:'Malika Karimova',    shift:'night',   triggered:'23:44:31', window:180, responded:'23:45:10', result:'excused', confidence:null, excusedBy:'Aziz K.', reason:'Power outage in section B' },
+];
+
+const MANAGERS = [
+  { id:1, name:'Aziz Karimov',   excused:4, failures:9  },
+  { id:2, name:'Dilorom Saidova',excused:1, failures:11 },
+  { id:3, name:'Rustam Nazarov', excused:0, failures:4  },
+];
+
+// ── Clock ──
+function updateClock() {
+  const now = new Date();
+  document.getElementById('liveClock').textContent =
+    now.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+}
+updateClock();
+setInterval(updateClock, 1000);
+
+// ── 24-hour shift bar ──
+const SHIFT_BAR_EVENTS = [
+  // { type: 'in'|'out'|'idle', minuteOfDay, shift: 'morning'|'night', name, status }
+  { type:'in',   min: 9*60+2,   shift:'morning', name:'Alisher N.',  status:'pass' },
+  { type:'in',   min: 9*60+14,  shift:'morning', name:'Dilnoza Y.',  status:'fail' },
+  { type:'in',   min: 9*60+0,   shift:'morning', name:'Bobur T.',    status:'pass' },
+  { type:'in',   min: 9*60+27,  shift:'morning', name:'Kamola E.',   status:'warn' },
+  { type:'in',   min: 9*60+3,   shift:'morning', name:'Sarvinoz U.', status:'pass' },
+  { type:'in',   min: 9*60+8,   shift:'morning', name:'Nodir X.',    status:'warn' },
+  { type:'out',  min:17*60+5,   shift:'morning', name:'Alisher N.',  status:'pass' },
+  { type:'out',  min:17*60+1,   shift:'morning', name:'Dilnoza Y.',  status:'pass' },
+  { type:'out',  min:17*60+0,   shift:'morning', name:'Kamola E.',   status:'pass' },
+  { type:'out',  min:17*60+2,   shift:'morning', name:'Sarvinoz U.', status:'pass' },
+  { type:'in',   min:21*60+0,   shift:'night',   name:'Malika K.',   status:'pass' },
+  { type:'in',   min:21*60+19,  shift:'night',   name:'Sherzod R.',  status:'fail' },
+  { type:'in',   min:21*60+1,   shift:'night',   name:'Feruza A.',   status:'warn' },
+  { type:'in',   min:21*60+0,   shift:'night',   name:'Ulugbek S.',  status:'pass' },
+  { type:'out',  min:24*60+60+1,shift:'night',   name:'Malika K.',   status:'pass' },
+  { type:'out',  min:24*60+60+0,shift:'night',   name:'Ulugbek S.',  status:'pass' },
+  { type:'idle', min:14*60+23,  shift:'morning', name:'Kamol D.',    status:'fail', durMin:6 },
+  { type:'idle', min:23*60+12,  shift:'night',   name:'Ulugbek S.',  status:'fail', durMin:8 },
+];
+
+function drawShiftBar() {
+  const canvas = document.getElementById('shiftBarCanvas');
+  const dpr = window.devicePixelRatio || 1;
+  const W = canvas.offsetWidth;
+  const H = 32;
+  canvas.width  = W * dpr;
+  canvas.height = H * dpr;
+  canvas.style.width  = W + 'px';
+  canvas.style.height = H + 'px';
+
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  const minToX = m => (m % 1440) / 1440 * W;
+
+  // Background
+  ctx.fillStyle = '#2B2720';
+  ctx.beginPath();
+  ctx.roundRect(0, 0, W, H, 4);
+  ctx.fill();
+
+  // Morning shift band: 09:00–17:00 (540–1020 min)
+  ctx.fillStyle = 'rgba(84,150,216,0.18)';
+  ctx.fillRect(minToX(540), 0, minToX(1020) - minToX(540), H);
+
+  // Night shift band: 21:00–24:00 + 00:00–05:00
+  ctx.fillStyle = 'rgba(99,109,126,0.18)';
+  ctx.fillRect(minToX(1260), 0, W - minToX(1260), H);
+  ctx.fillRect(0, 0, minToX(300), H);
+
+  // Shift boundary lines
+  ctx.strokeStyle = 'rgba(84,150,216,0.35)';
+  ctx.lineWidth = 1;
+  [540, 1020].forEach(m => {
+    ctx.beginPath();
+    ctx.moveTo(minToX(m) + 0.5, 0);
+    ctx.lineTo(minToX(m) + 0.5, H);
+    ctx.stroke();
+  });
+  ctx.strokeStyle = 'rgba(99,109,126,0.3)';
+  [1260, 300].forEach(m => {
+    ctx.beginPath();
+    ctx.moveTo(minToX(m) + 0.5, 0);
+    ctx.lineTo(minToX(m) + 0.5, H);
+    ctx.stroke();
+  });
+
+  // Center baseline
+  ctx.strokeStyle = 'rgba(58,53,48,0.8)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, H / 2);
+  ctx.lineTo(W, H / 2);
+  ctx.stroke();
+
+  // Idle overlays
+  SHIFT_BAR_EVENTS.filter(e => e.type === 'idle').forEach(e => {
+    const x1 = minToX(e.min);
+    const x2 = minToX(e.min + (e.durMin || 6));
+    ctx.fillStyle = 'rgba(201,138,40,0.22)';
+    ctx.fillRect(x1, 0, x2 - x1, H);
+    ctx.strokeStyle = 'rgba(201,138,40,0.5)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x1 + 0.5, 0.5, x2 - x1 - 1, H - 1);
+  });
+
+  // Event ticks
+  const colorMap = { pass: '#3C9E6F', fail: '#D05448', warn: '#C98A28' };
+  SHIFT_BAR_EVENTS.filter(e => e.type !== 'idle').forEach(e => {
+    const x = minToX(e.min % 1440);
+    const isOut = e.type === 'out';
+    const color = colorMap[e.status] || '#636D7E';
+    const cy = H / 2;
+    const tickH = 9;
+
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    if (!isOut) {
+      // check-in: triangle pointing up above centerline
+      ctx.moveTo(x, cy - 2);
+      ctx.lineTo(x - 3, cy - 2 - tickH);
+      ctx.lineTo(x + 3, cy - 2 - tickH);
+    } else {
+      // check-out: triangle pointing down below centerline
+      ctx.moveTo(x, cy + 2);
+      ctx.lineTo(x - 3, cy + 2 + tickH);
+      ctx.lineTo(x + 3, cy + 2 + tickH);
+    }
+    ctx.closePath();
+    ctx.fill();
+  });
+}
+
+// Tooltip on hover
+document.getElementById('shiftBarCanvas').addEventListener('mousemove', function(e) {
+  const rect = this.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const pct = x / rect.width;
+  const totalMin = Math.round(pct * 1440);
+  const h = Math.floor(totalMin / 60) % 24;
+  const m = totalMin % 60;
+  const timeStr = String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
+
+  const nearby = SHIFT_BAR_EVENTS.find(ev => {
+    const evX = (ev.min % 1440) / 1440 * rect.width;
+    return Math.abs(evX - x) < 8;
+  });
+
+  const tip = document.getElementById('shiftBarTooltip');
+  tip.style.display = 'block';
+  tip.style.left = (e.clientX + 12) + 'px';
+  tip.style.top  = (e.clientY - 28) + 'px';
+  if (nearby) {
+    const label = nearby.type === 'idle' ? `Idle — ${nearby.name}` :
+                  nearby.type === 'in'   ? `Check-in — ${nearby.name}` :
+                                           `Check-out — ${nearby.name}`;
+    tip.textContent = label;
+  } else {
+    tip.textContent = timeStr;
+  }
+});
+document.getElementById('shiftBarCanvas').addEventListener('mouseleave', function() {
+  document.getElementById('shiftBarTooltip').style.display = 'none';
+});
+
+window.addEventListener('resize', drawShiftBar);
+
 // ── Tab switching ──
+const TAB_IDS = ['attendance','presence','review','enroll','managers'];
+
 function switchTab(name, el, isMobile = false) {
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  TAB_IDS.forEach(id => document.getElementById('tab-' + id).classList.remove('active'));
   document.getElementById('tab-' + name).classList.add('active');
 
   if (isMobile) {
     document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
     el.classList.add('active');
-    // sync sidebar
-    document.querySelectorAll('.sidebar-item').forEach((b, i) => {
-      b.classList.toggle('active', ['attendance','review','enroll'][i] === name);
-    });
+    document.querySelectorAll('.sidebar-item').forEach(b =>
+      b.classList.toggle('active', b.textContent.trim().toLowerCase().startsWith(name))
+    );
   } else {
     document.querySelectorAll('.sidebar-item').forEach(b => b.classList.remove('active'));
     el.classList.add('active');
-    // sync mobile nav
-    document.querySelectorAll('.nav-btn').forEach((b, i) => {
-      b.classList.toggle('active', ['attendance','review','enroll'][i] === name);
-    });
+    document.querySelectorAll('.nav-btn').forEach(b =>
+      b.classList.toggle('active', b.id === 'mnav-' + name)
+    );
   }
 }
 
@@ -339,29 +1036,84 @@ function renderAttendance() {
       w.late > 0                   ? `<span class="badge badge-late">Late</span>` :
                                      `<span class="badge badge-ontime">On time</span>`;
     return `<tr>
-      <td>${w.name}</td>
+      <td class="worker-name">${w.name}</td>
       <td><span class="badge badge-${w.shift}">${w.shift}</span></td>
-      <td>${w.in}</td>
-      <td>${w.out}</td>
-      <td>${w.late > 0 ? w.late + ' min' : '—'}</td>
-      <td>${w.fee > 0 ? `<span class="fee">$${w.fee.toFixed(2)}</span>` : '—'}</td>
+      <td class="mono">${w.in}</td>
+      <td class="mono">${w.out}</td>
+      <td class="mono">${w.late > 0 ? w.late + ' min' : '—'}</td>
+      <td>${w.fee > 0 ? `<span class="fee-val">$${w.fee.toFixed(2)}</span>` : '—'}</td>
       <td>${statusBadge}</td>
     </tr>`;
   }).join('');
 }
 
+// ── Presence checks table ──
+function renderPresence() {
+  document.getElementById('presenceBody').innerHTML = PRESENCE_CHECKS.map(p => {
+    const resultBadge =
+      p.result === 'passed'  ? `<span class="badge badge-passed">Passed</span>` :
+      p.result === 'failed'  ? `<span class="badge badge-failed">Failed</span>` :
+      p.result === 'excused' ? `<span class="badge badge-excused">Excused</span>` :
+                               `<span class="badge badge-pending">Pending</span>`;
+
+    let confCell = '—';
+    if (p.confidence !== null) {
+      const cls = p.confidence >= 0.70 ? 'conf-hi' : p.confidence >= 0.60 ? 'conf-mid' : 'conf-lo';
+      confCell = `<span class="conf-val ${cls}">${p.confidence.toFixed(2)}</span>`;
+    }
+
+    const action = p.result === 'failed'
+      ? `<button class="btn btn-excuse" onclick="excuseCheck(${p.id})">Excuse</button>`
+      : p.result === 'excused' && p.excusedBy
+        ? `<span style="font-size:12px;color:var(--muted)">${p.excusedBy}</span>`
+        : '—';
+
+    return `<tr>
+      <td class="worker-name">${p.name}</td>
+      <td><span class="badge badge-${p.shift}">${p.shift}</span></td>
+      <td class="mono">${p.triggered}</td>
+      <td class="mono">${Math.round(p.window / 60)} min</td>
+      <td class="mono">${p.responded || '—'}</td>
+      <td>${resultBadge}</td>
+      <td>${confCell}</td>
+      <td>${action}</td>
+    </tr>`;
+  }).join('');
+}
+
+function excuseCheck(id) {
+  const reason = prompt('Reason for excuse (required):');
+  if (!reason || !reason.trim()) return;
+  const idx = PRESENCE_CHECKS.findIndex(p => p.id === id);
+  if (idx !== -1) {
+    PRESENCE_CHECKS[idx].result = 'excused';
+    PRESENCE_CHECKS[idx].excusedBy = 'Admin';
+    renderPresence();
+    const badge = document.getElementById('sidebarPresenceCount');
+    const n = PRESENCE_CHECKS.filter(p => p.result === 'failed').length;
+    badge.textContent = n;
+    if (!n) badge.style.display = 'none';
+  }
+}
+
 // ── Review queue ──
 function renderReview() {
   const list = document.getElementById('reviewList');
-  if (!REVIEW_EVENTS.length) { list.innerHTML = '<div class="empty">No events pending review.</div>'; return; }
+  if (!REVIEW_EVENTS.length) {
+    list.innerHTML = '<div class="empty">No events pending review.</div>';
+    return;
+  }
   list.innerHTML = REVIEW_EVENTS.map(e => `
     <div class="review-card" id="rc-${e.id}">
       <div class="review-meta">
         <div class="review-name">${e.name}</div>
-        <div class="review-detail">${e.shift} shift · ${e.type.replace('_',' ')} at ${e.time}</div>
+        <div class="review-detail">${e.shift} · ${e.type.replace('_',' ')} · ${e.time}</div>
         ${e.reasons.map(r => `<div class="review-reason">⚠ ${r}</div>`).join('')}
       </div>
-      <div class="confidence"><strong>${(e.confidence*100).toFixed(0)}%</strong>confidence</div>
+      <div class="confidence">
+        <strong style="color:${e.confidence >= 0.65 ? 'var(--fee)' : 'var(--fail)'}">${(e.confidence*100).toFixed(0)}%</strong>
+        confidence
+      </div>
       <div class="review-actions">
         <button class="btn btn-approve"  onclick="resolve(${e.id})">Approve</button>
         <button class="btn btn-override" onclick="resolve(${e.id})">Override</button>
@@ -371,16 +1123,36 @@ function renderReview() {
 
 function resolve(id) {
   const card = document.getElementById('rc-' + id);
-  card.style.transition = 'opacity .3s'; card.style.opacity = '.3';
+  card.style.transition = 'opacity .25s';
+  card.style.opacity = '0';
   setTimeout(() => {
     card.remove();
     const idx = REVIEW_EVENTS.findIndex(e => e.id === id);
     if (idx !== -1) REVIEW_EVENTS.splice(idx, 1);
     const n = REVIEW_EVENTS.length;
     document.getElementById('sidebarReviewCount').textContent = n;
-    document.getElementById('mobileReviewBadge').textContent = n ? ' ' + n : '';
     if (!n) document.getElementById('reviewList').innerHTML = '<div class="empty">No events pending review.</div>';
-  }, 300);
+  }, 250);
+}
+
+// ── Excuse rates ──
+function renderExcuseRates() {
+  document.getElementById('excuseBody').innerHTML = MANAGERS.map(m => {
+    const rate = m.failures > 0 ? (m.excused / m.failures) : 0;
+    const pct  = Math.round(rate * 100);
+    const isHigh = pct >= 40;
+    return `<tr>
+      <td class="worker-name">${m.name}</td>
+      <td class="mono">${m.excused}</td>
+      <td class="mono">${m.failures}</td>
+      <td class="mono ${isHigh ? 'fee-val' : ''}">${pct}%</td>
+      <td>
+        <span class="rate-bar-track ${isHigh ? 'rate-high' : ''}">
+          <span class="rate-bar-fill" style="width:${pct}%"></span>
+        </span>
+      </td>
+    </tr>`;
+  }).join('');
 }
 
 // ── Enrollment ──
@@ -400,21 +1172,28 @@ function submitEnroll() {
   if (!name) { alert('Enter a name.'); return; }
   if (!document.getElementById('photoInput').files[0]) { alert('Upload a photo.'); return; }
   const btn = document.getElementById('enrollBtn');
-  btn.textContent = 'Enrolling…'; btn.disabled = true;
+  btn.textContent = 'Enrolling…';
+  btn.disabled = true;
   setTimeout(() => {
-    btn.textContent = 'Enroll Worker'; btn.disabled = false;
+    btn.textContent = 'Enroll Worker';
+    btn.disabled = false;
     document.getElementById('enrollSuccess').style.display = 'block';
     document.getElementById('enrollName').value = '';
     document.getElementById('enrollTelegram').value = '';
     const drop = document.getElementById('photoDrop');
-    drop.style.backgroundImage = ''; drop.style.height = '';
+    drop.style.backgroundImage = '';
+    drop.style.height = '';
     document.getElementById('photoLabel').style.display = '';
     document.getElementById('photoInput').value = '';
-  }, 1000);
+  }, 900);
 }
 
+// ── Init ──
 renderAttendance();
 renderReview();
+renderPresence();
+renderExcuseRates();
+requestAnimationFrame(drawShiftBar);
 </script>
 </body>
 </html>
