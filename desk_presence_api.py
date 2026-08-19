@@ -321,7 +321,12 @@ async def get_worker_embeddings():
     """
     async with pool.acquire() as conn:
         rows = await conn.fetch(
-            "SELECT id, face_embedding FROM workers WHERE active = TRUE"
+            """
+            SELECT id, face_embedding FROM workers
+            WHERE active = TRUE
+              AND face_enrolled = TRUE
+              AND face_embedding IS NOT NULL
+            """
         )
     return [
         {"worker_id": r["id"], "face_embedding": list(r["face_embedding"])}

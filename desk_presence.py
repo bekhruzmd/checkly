@@ -38,6 +38,7 @@ Environment variables:
   EMBED_REFRESH_S - Worker embedding refresh interval in seconds (default: 3600)
 """
 
+import http.server
 import json
 import logging
 import os
@@ -59,8 +60,24 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s %(name)s %(message)s",
 )
 
-BACKEND_URL = os.environ.get("BACKEND_URL", "http://localhost:8000")
-EDGE_SECRET = os.environ.get("EDGE_SECRET", "")
+BACKEND_URL    = os.environ.get("BACKEND_URL", "http://localhost:8000")
+EDGE_SECRET    = os.environ.get("EDGE_SECRET", "")
+SNAPSHOT_PORT  = int(os.environ.get("SNAPSHOT_PORT", "8001"))
+
+# ── Snapshot store (zone_id → latest JPEG bytes) ──────────────────────────────
+# Written by CameraMonitor threads; read by the snapshot HTTP server.
+_latest_frames: dict[int, bytes] = {}
+_frames_lock   = threading.Lock()
+
+# ── Enrollment zones (zone_id → session_id) ──────────────────────────────────
+# Refreshed by PresencePipeline on the same schedule as embedding refresh.
+# CameraMonitor threads read this to know whether to submit enrollment samples.
+_enrollment_zones: dict[int, int] = {}
+_enrollment_lock  = threading.Lock()
+
+# Per-zone timestamp of last enrollment sample submission (throttle to 1 per 2 s).
+_last_enrollment_submit: dict[int, float] = {}
+ENROLLMENT_SUBMIT_INTERVAL = 2.0  # seconds
 
 CAPTURE_FPS     = 2      # target frames per second for occupancy polling
 OCC_THRESHOLD   = 500    # foreground pixel count to call a zone "occupied"
@@ -107,7 +124,7 @@ def post_event(
 
 
 def fetch_enrolled_workers() -> list[tuple[int, list[float]]]:
-    """Fetch active workers' embeddings from the backend. Returns [] on failure."""
+    """Fetch active enrolled workers' embeddings from the backend. Returns [] on failure."""
     try:
         resp = requests.get(
             f"{BACKEND_URL}/desk-presence/workers/embeddings",
@@ -119,6 +136,92 @@ def fetch_enrolled_workers() -> list[tuple[int, list[float]]]:
     except Exception as exc:
         log.error("Failed to fetch worker embeddings: %s", exc)
         return []
+
+
+def fetch_enrollment_zones() -> dict[int, int]:
+    """
+    Poll the backend for zones that have an active enrollment session.
+    Returns {desk_zone_id: session_id}. Returns {} on failure (safe default).
+    """
+    try:
+        resp = requests.get(
+            f"{BACKEND_URL}/enrollment/active-zones",
+            headers=_auth_headers(),
+            timeout=5,
+        )
+        resp.raise_for_status()
+        return {item["desk_zone_id"]: item["session_id"] for item in resp.json()}
+    except Exception as exc:
+        log.warning("Failed to fetch enrollment zones: %s", exc)
+        return {}
+
+
+def submit_enrollment_sample(session_id: int, embedding: list[float]) -> None:
+    """Submit one face embedding to the active enrollment session. Fire-and-forget."""
+    try:
+        resp = requests.post(
+            f"{BACKEND_URL}/enrollment/sessions/{session_id}/samples",
+            json={"embedding": embedding},
+            headers=_auth_headers(),
+            timeout=5,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        log.debug(
+            "Enrollment sample submitted: session=%d samples=%d status=%s",
+            session_id, data.get("sample_count"), data.get("status"),
+        )
+    except Exception as exc:
+        log.warning("Failed to submit enrollment sample session=%d: %s", session_id, exc)
+
+
+# ── Snapshot HTTP server ──────────────────────────────────────────────────────
+
+class _SnapshotHandler(http.server.BaseHTTPRequestHandler):
+    """
+    Serves the latest JPEG frame per zone.
+    Endpoint: GET /snapshot/<desk_zone_id>
+
+    This server listens on SNAPSHOT_PORT (default 8001) and is intended to be
+    accessible only over the Tailscale network — do not expose to the public
+    internet. The admin dashboard fetches snapshots directly from the edge
+    device's Tailscale IP to give managers a live view without storing frames.
+    """
+
+    def do_GET(self) -> None:  # noqa: N802
+        parts = self.path.strip("/").split("/")
+        if len(parts) == 2 and parts[0] == "snapshot":
+            try:
+                zone_id = int(parts[1])
+            except ValueError:
+                self.send_error(400, "Invalid zone_id")
+                return
+
+            with _frames_lock:
+                jpeg = _latest_frames.get(zone_id)
+
+            if jpeg:
+                self.send_response(200)
+                self.send_header("Content-Type", "image/jpeg")
+                self.send_header("Content-Length", str(len(jpeg)))
+                self.send_header("Cache-Control", "no-cache")
+                self.end_headers()
+                self.wfile.write(jpeg)
+            else:
+                self.send_error(404, "No frame available for this zone yet")
+        else:
+            self.send_error(404)
+
+    def log_message(self, _format: str, *_args: object) -> None:
+        pass  # suppress per-request HTTP logs; zone-level events are logged by the pipeline
+
+
+def start_snapshot_server(port: int = SNAPSHOT_PORT) -> threading.Thread:
+    server = http.server.HTTPServer(("", port), _SnapshotHandler)
+    t = threading.Thread(target=server.serve_forever, daemon=True, name="snapshot-http")
+    t.start()
+    log.info("Snapshot server listening on port %d", port)
+    return t
 
 
 # ── Computer vision helpers ───────────────────────────────────────────────────
@@ -228,8 +331,22 @@ class CameraMonitor(threading.Thread):
             cap.release()
 
     def _process_frame(self, frame: np.ndarray) -> None:
+        # Store a downscaled JPEG for the snapshot server (every frame, all zones
+        # on this camera share the same physical frame).
+        snapshot_h, snapshot_w = frame.shape[:2]
+        if snapshot_w > 640:
+            scale   = 640 / snapshot_w
+            snapshot = cv2.resize(frame, (640, int(snapshot_h * scale)))
+        else:
+            snapshot = frame
+        _, jpeg = cv2.imencode(".jpg", snapshot, [cv2.IMWRITE_JPEG_QUALITY, 70])
+        jpeg_bytes = jpeg.tobytes()
+
         for zone in self.zones:
             zid = zone.desk_zone_id
+
+            with _frames_lock:
+                _latest_frames[zid] = jpeg_bytes
 
             if self._masks[zid] is None:
                 self._masks[zid] = build_polygon_mask(frame, zone.zone_polygon)
@@ -237,6 +354,11 @@ class CameraMonitor(threading.Thread):
             fg = self._subtractors[zid].apply(frame)
             zone_fg = cv2.bitwise_and(fg, self._masks[zid])
             is_occupied = int(np.count_nonzero(zone_fg)) >= OCC_THRESHOLD
+
+            # Enrollment sample submission — runs in parallel with normal occupancy
+            # tracking whenever the zone has an active enrollment session.
+            # Throttled to at most one submission per ENROLLMENT_SUBMIT_INTERVAL seconds.
+            self._maybe_submit_enrollment_sample(zid, frame)
 
             if is_occupied == self._state[zid]:
                 self._pending_state[zid] = None
@@ -255,6 +377,35 @@ class CameraMonitor(threading.Thread):
                 self._state[zid]         = is_occupied
                 self._pending_state[zid] = None
                 self._pending_count[zid] = 0
+
+    def _maybe_submit_enrollment_sample(self, zid: int, frame: np.ndarray) -> None:
+        with _enrollment_lock:
+            session_id = _enrollment_zones.get(zid)
+        if session_id is None:
+            return
+
+        now = time.monotonic()
+        last = _last_enrollment_submit.get(zid, 0.0)
+        if now - last < ENROLLMENT_SUBMIT_INTERVAL:
+            return
+
+        embedding = face_match.get_embedding_from_frame(frame)
+        if embedding is None:
+            return
+
+        # Basic sharpness gate — same threshold as check_liveness.
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        if cv2.Laplacian(gray, cv2.CV_64F).var() < 50.0:
+            log.debug("Zone %d enrollment: frame too blurry, skipping sample", zid)
+            return
+
+        _last_enrollment_submit[zid] = now
+        # Submit in a daemon thread so we don't block the frame loop.
+        threading.Thread(
+            target=submit_enrollment_sample,
+            args=(session_id, embedding),
+            daemon=True,
+        ).start()
 
     def _commit_transition(
         self, zone: ZoneConfig, frame: np.ndarray, is_occupied: bool
@@ -332,6 +483,16 @@ class PresencePipeline:
                 self._enrolled.extend(fresh)
             log.info("Refreshed %d worker embeddings", len(fresh))
 
+            fresh_zones = fetch_enrollment_zones()
+            with _enrollment_lock:
+                _enrollment_zones.clear()
+                _enrollment_zones.update(fresh_zones)
+            if fresh_zones:
+                log.info(
+                    "Active enrollment zones: %s",
+                    {f"zone={k}": f"session={v}" for k, v in fresh_zones.items()},
+                )
+
 
 # ── Entry point ───────────────────────────────────────────────────────────────
 
@@ -356,6 +517,13 @@ def main() -> None:
 
     zones    = load_zones(config_path)
     pipeline = PresencePipeline(zones)
+
+    # Fetch initial enrollment zones before starting monitors.
+    initial_zones = fetch_enrollment_zones()
+    with _enrollment_lock:
+        _enrollment_zones.update(initial_zones)
+
+    start_snapshot_server(SNAPSHOT_PORT)
     pipeline.start(embed_refresh_s=embed_refresh)
 
     def _shutdown(sig, _frame):

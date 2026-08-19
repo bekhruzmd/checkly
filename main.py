@@ -2,15 +2,21 @@
 Attendance MVP API.
 
 Endpoints:
-  POST /workers/enroll              -- one-time face enrollment for a new worker
+  POST /workers/enroll              -- legacy single-photo enrollment (kept for tests)
   POST /attendance/check-in         -- worker submits a selfie + GPS coords
   GET  /attendance/sheet            -- attendance log for admin view
   GET  /attendance/daily-summary    -- aggregated daily summary per shift
 
   /presence/*                       -- presence check endpoints (see presence.py)
+  /enrollment/*                     -- camera-based enrollment flow (see enrollment_api.py)
+  /admin/workly/*                   -- Workly roster import (see workly_import.py)
 
 No worker photos are stored anywhere -- not on disk, not in the DB.
 Photos exist only in request memory for the duration of the call.
+
+Check-in gate: workers with face_enrolled=FALSE are excluded from the
+embedding lookup and cannot match, preventing check-in until a manager
+approves enrollment via the camera-based flow.
 """
 
 import asyncio
@@ -26,9 +32,11 @@ from pydantic import BaseModel
 
 import aggregation
 import desk_presence_api
+import enrollment_api
 import face_match
 import presence
 import telegram_bot
+import workly_import
 from utils import compute_row_hash
 
 log = logging.getLogger(__name__)
@@ -36,6 +44,8 @@ log = logging.getLogger(__name__)
 app = FastAPI(title="Attendance MVP")
 app.include_router(presence.router)
 app.include_router(desk_presence_api.router)
+app.include_router(enrollment_api.router)
+app.include_router(workly_import.router)
 
 DATABASE_URL = os.environ.get(
     "DATABASE_URL", "postgresql://user:password@localhost:5432/attendance"
@@ -52,6 +62,8 @@ async def startup():
     # Share pool with sub-modules.
     presence.pool          = pool
     desk_presence_api.pool = pool
+    enrollment_api.pool    = pool
+    workly_import.set_pool(pool)
     aggregation.DATABASE_URL = DATABASE_URL
 
     # Restore desk-presence state from today's DB events (after pool is set).
@@ -212,8 +224,16 @@ async def check_in(
     photo_bytes = await photo.read()
 
     async with pool.acquire() as conn:
-        workers  = await conn.fetch(
-            "SELECT id, face_embedding FROM workers WHERE active = TRUE"
+        # Only match against workers who have completed face enrollment.
+        # Workers with face_enrolled=FALSE have no embedding and cannot check in
+        # until a manager approves their enrollment session.
+        workers = await conn.fetch(
+            """
+            SELECT id, face_embedding FROM workers
+            WHERE active = TRUE
+              AND face_enrolled = TRUE
+              AND face_embedding IS NOT NULL
+            """
         )
         enrolled = [(w["id"], w["face_embedding"]) for w in workers]
 
