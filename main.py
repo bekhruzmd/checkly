@@ -28,6 +28,7 @@ from datetime import datetime, date, time as dtime
 import asyncpg
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import FastAPI, UploadFile, Form, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 import aggregation
@@ -42,6 +43,12 @@ from utils import compute_row_hash
 log = logging.getLogger(__name__)
 
 app = FastAPI(title="Attendance MVP")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 app.include_router(presence.router)
 app.include_router(desk_presence_api.router)
 app.include_router(enrollment_api.router)

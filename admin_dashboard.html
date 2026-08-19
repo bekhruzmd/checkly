@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Checkly — Admin Dashboard</title>
+<link rel="icon" type="image/png" href="favicon-light.png" media="(prefers-color-scheme: light)">
+<link rel="icon" type="image/png" href="favicon-dark.png" media="(prefers-color-scheme: dark)">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <meta name="theme-color" content="#181511">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -116,7 +118,7 @@ input:focus, select:focus { border-color: var(--accent); }
   font-size: 17px; font-weight: 700;
   display: flex; align-items: center; gap: 8px;
 }
-.topbar-brand img { width: 22px; height: 22px; }
+.topbar-brand img { height: 32px; width: auto; display: block; }
 .topbar-right { display: flex; align-items: center; gap: 12px; }
 .badge-live {
   background: var(--pass);
@@ -332,8 +334,10 @@ input:focus, select:focus { border-color: var(--accent); }
 <div id="app-shell" style="display:none">
   <header class="topbar">
     <span class="topbar-brand">
-      <img src="favicon.svg" alt="">
-      Checkly
+      <picture>
+        <source srcset="logo-light.png" media="(prefers-color-scheme: light)">
+        <img src="logo-dark.png" alt="Checkly">
+      </picture>
     </span>
     <div class="topbar-right">
       <span class="badge-live" id="realtime-badge" style="display:none">LIVE</span>

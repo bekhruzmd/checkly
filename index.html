@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Checkly — Check In</title>
 <link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" href="favicon-light.png" media="(prefers-color-scheme: light)">
+<link rel="icon" type="image/png" href="favicon-dark.png" media="(prefers-color-scheme: dark)">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <meta name="theme-color" content="#181C22">
 <style>
@@ -55,6 +57,10 @@
 </head>
 <body>
 
+<picture style="display:block;margin-bottom:16px">
+  <source srcset="logo-light.png" media="(prefers-color-scheme: light)">
+  <img src="logo-dark.png" alt="Checkly" style="height:40px;width:auto;">
+</picture>
 <h1>Check In / Out</h1>
 <div id="shiftStatus">Today: checked in at 09:03 — currently IN</div>
 
