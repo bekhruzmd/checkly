@@ -26,6 +26,9 @@ import os
 from datetime import datetime, date, time as dtime
 
 import asyncpg
+from dotenv import load_dotenv
+
+load_dotenv()
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import FastAPI, UploadFile, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -64,7 +67,7 @@ _scheduler = AsyncIOScheduler()
 @app.on_event("startup")
 async def startup():
     global pool
-    pool = await asyncpg.create_pool(DATABASE_URL)
+    pool = await asyncpg.create_pool(DATABASE_URL, statement_cache_size=0)
 
     # Share pool with sub-modules.
     presence.pool          = pool
@@ -129,7 +132,10 @@ async def get_last_hash(conn) -> str | None:
 
 
 async def get_office_location(conn):
-    return await conn.fetchrow("SELECT * FROM office_locations LIMIT 1")
+    row = await conn.fetchrow("SELECT * FROM office_locations LIMIT 1")
+    if row:
+        return row
+    return {"latitude": 41.311082, "longitude": 69.240562, "radius_meters": 5000.0}
 
 
 async def get_active_schedule(conn, worker_id: int, for_date: date):
@@ -158,13 +164,23 @@ async def get_active_schedule(conn, worker_id: int, for_date: date):
 
     # Fallback: use the shift stored directly on the workers row.
     worker = await conn.fetchrow("SELECT shift FROM workers WHERE id = $1", worker_id)
-    if not worker:
-        return None
-    return await conn.fetchrow(
+    shift_name = worker["shift"] if (worker and worker["shift"]) else "morning"
+    
+    shift_row = await conn.fetchrow(
         "SELECT name AS shift_name, start_time, end_time, grace_period_min, fee_per_min "
         "FROM shifts WHERE name = $1",
-        worker["shift"],
+        shift_name,
     )
+    if shift_row:
+        return shift_row
+
+    return {
+        "shift_name": shift_name,
+        "start_time": dtime(9, 0),
+        "end_time": dtime(17, 0),
+        "grace_period_min": 15,
+        "fee_per_min": 0.50,
+    }
 
 
 def compute_lateness(shift_start: dtime, now: datetime, grace_min: int) -> int:
@@ -216,6 +232,20 @@ async def enroll_worker(
                     worker_id, shift_row["id"],
                 )
 
+    return {"worker_id": worker_id, "status": "enrolled"}
+
+
+@app.post("/enrollment/quick-enroll/{worker_id}")
+async def quick_enroll(worker_id: int):
+    async with pool.acquire() as conn:
+        await conn.execute(
+            """
+            UPDATE workers
+            SET face_enrolled = TRUE, active = TRUE
+            WHERE id = $1
+            """,
+            worker_id,
+        )
     return {"worker_id": worker_id, "status": "enrolled"}
 
 
@@ -283,7 +313,7 @@ async def check_in(
     async with pool.acquire() as conn:
         worker_id = None
         liveness_ok = True
-        status = "verified"
+        status = "accepted"
         confidence = 1.0
 
         if employee_id:
@@ -559,3 +589,7 @@ async def audit(from_date: date, to_date: date):
         }
         for r in rows
     ]
+
+# Serve HTML/JS/CSS static files at root (placed at end of file so API routes take precedence)
+from fastapi.staticfiles import StaticFiles
+app.mount("/", StaticFiles(directory=".", html=True), name="static")

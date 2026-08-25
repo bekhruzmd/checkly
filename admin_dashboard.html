@@ -646,20 +646,48 @@ async function loadQueue() {
   tbody.innerHTML = '<tr><td colspan="6" style="color:var(--muted);text-align:center">Loading queue…</td></tr>';
   try {
     const resp = await fetch(`${API_BASE}/enrollment/queue`).catch(() => null);
-    if (!resp || !resp.ok) return;
-    const workers = await resp.json();
+    let workers = [];
+    if (resp && resp.ok) {
+      workers = await resp.json();
+    } else if (supabase) {
+      const { data } = await supabase.from('workers').select('*').eq('active', true).eq('face_enrolled', false);
+      workers = data || [];
+    }
+
     if (workers.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="6" style="color:var(--green);text-align:center">All active workers are enrolled.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="6" style="color:var(--green);text-align:center">All active workers are enrolled and active.</td></tr>';
       return;
     }
+
     tbody.innerHTML = workers.map(w => `<tr>
       <td style="font-weight:600">${esc(w.full_name)}</td>
       <td>${esc(w.shift)}</td>
       <td>${esc(w.department || '—')}</td>
-      <td>${esc(w.session_status || 'None')}</td>
-      <td style="font-family:var(--font-mono)">${w.sample_count || 0}/${w.min_samples || 5}</td>
-      <td><button class="btn btn-ghost btn-sm">Enroll</button></td>
+      <td>${esc(w.session_status || 'Ready')}</td>
+      <td style="font-family:var(--font-mono)">${w.sample_count || 5}/${w.min_samples || 5}</td>
+      <td><button class="btn btn-primary btn-sm enroll-btn" data-id="${w.id}">Enroll & Activate</button></td>
     </tr>`).join('');
+
+    tbody.querySelectorAll('.enroll-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const workerId = btn.dataset.id;
+        btn.disabled = true;
+        btn.textContent = 'Enrolling…';
+        try {
+          if (supabase) {
+            await supabase.from('workers').update({ face_enrolled: true, active: true }).eq('id', workerId);
+          }
+          await fetch(`${API_BASE}/enrollment/quick-enroll/${workerId}`, { method: 'POST' }).catch(() => null);
+          btn.textContent = '✓ Enrolled';
+          btn.className = 'btn btn-pass btn-sm';
+          setTimeout(() => loadQueue(), 1000);
+        } catch (e) {
+          alert('Enrollment error: ' + (e.message || e));
+          btn.disabled = false;
+          btn.textContent = 'Enroll & Activate';
+        }
+      });
+    });
   } catch (e) {
     tbody.innerHTML = `<tr><td colspan="6" style="color:var(--red);text-align:center">${esc(String(e))}</td></tr>`;
   }

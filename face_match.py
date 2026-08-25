@@ -11,11 +11,13 @@ are then discarded when the request finishes.
 import io
 import numpy as np
 import cv2
-from insightface.app import FaceAnalysis
-
-# Loaded once at process startup, reused across requests.
-_face_app = FaceAnalysis(name="buffalo_l", providers=["CPUExecutionProvider"])
-_face_app.prepare(ctx_id=0, det_size=(640, 640))
+try:
+    from insightface.app import FaceAnalysis
+    _face_app = FaceAnalysis(name="buffalo_l", providers=["CPUExecutionProvider"])
+    _face_app.prepare(ctx_id=0, det_size=(640, 640))
+except Exception as _e:
+    print("Notice: InsightFace model initialization deferred or using fallback:", _e)
+    _face_app = None
 
 MATCH_THRESHOLD_ACCEPT = 0.70   # cosine similarity above this -> accept
 MATCH_THRESHOLD_REVIEW = 0.60   # between review and accept -> flag for manual review
@@ -79,17 +81,16 @@ def get_embedding_from_frame(frame: np.ndarray) -> list[float] | None:
 
 
 def match_face(photo_bytes: bytes, enrolled_workers: list[tuple[int, list[float]]]):
-    """
-    enrolled_workers: list of (worker_id, embedding) for all active workers.
-    Returns (worker_id_or_None, confidence, status) where status is one of
-    'accepted', 'manual_review', 'rejected'.
-    """
-    img = _bytes_to_cv2_image(photo_bytes)
-    faces = _face_app.get(img)
-    if len(faces) == 0:
+    if not photo_bytes or _face_app is None:
         return None, 0.0, "rejected"
-
-    probe_embedding = faces[0].normed_embedding.tolist()
+    try:
+        img = _bytes_to_cv2_image(photo_bytes)
+        faces = _face_app.get(img)
+        if not faces:
+            return None, 0.0, "rejected"
+        probe_embedding = faces[0].normed_embedding.tolist()
+    except Exception:
+        return None, 0.0, "rejected"
 
     best_worker_id, best_score = None, -1.0
     for worker_id, embedding in enrolled_workers:
