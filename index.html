@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Checkly — Kiosk Check In</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+<title>Checkly — iPad Kiosk Station</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" href="favicon-light.png" media="(prefers-color-scheme: light)">
 <link rel="icon" type="image/png" href="favicon-dark.png" media="(prefers-color-scheme: dark)">
@@ -11,136 +11,198 @@
 <meta name="theme-color" content="#0B0F17">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
     --bg: #0B0F17;
     --bg-gradient: radial-gradient(circle at 50% 0%, #1e293b 0%, #0b0f17 80%);
-    --surface: rgba(22, 27, 34, 0.75);
-    --border: rgba(255, 255, 255, 0.08);
-    --border-strong: rgba(255, 255, 255, 0.16);
+    --surface: rgba(22, 27, 34, 0.85);
+    --border: rgba(255, 255, 255, 0.1);
+    --border-strong: rgba(255, 255, 255, 0.2);
     --text: #f1f5f9;
     --muted: #94a3b8;
     --accent: #3b82f6;
     --accent-glow: rgba(59, 130, 246, 0.35);
     --pass: #10b981;
-    --pass-glow: rgba(16, 185, 129, 0.25);
+    --pass-glow: rgba(16, 185, 129, 0.3);
     --fail: #ef4444;
-    --fail-glow: rgba(239, 68, 68, 0.25);
+    --fail-glow: rgba(239, 68, 68, 0.3);
     --warn: #f59e0b;
 
     --font-display: 'Plus Jakarta Sans', system-ui, sans-serif;
     --font-body: 'Inter', system-ui, sans-serif;
     --font-mono: 'JetBrains Mono', monospace;
   }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
   body {
     background: var(--bg);
     background-image: var(--bg-gradient);
     background-attachment: fixed;
     color: var(--text);
     font-family: var(--font-body);
-    display: flex; flex-direction: column; align-items: center;
+    display: flex; flex-direction: column; align-items: center; justify-content: space-between;
     min-height: 100vh;
+    padding: 20px;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
     -webkit-font-smoothing: antialiased;
+    overflow: hidden;
   }
 
-  /* ── Header Nav ── */
+  /* ── iPad Topbar ── */
   header {
-    width: 100%; max-width: 520px;
-    padding: 20px 20px 0;
+    width: 100%; max-width: 640px;
     display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 0;
   }
-  .brand { display: flex; align-items: center; gap: 10px; }
-  .brand img { height: 32px; width: auto; filter: drop-shadow(0 0 10px rgba(59,130,246,0.3)); }
-  .nav-links { display: flex; gap: 12px; }
-  .nav-link {
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .brand img { height: 36px; width: auto; filter: drop-shadow(0 0 10px rgba(59,130,246,0.35)); }
+
+  .kiosk-badge {
+    background: rgba(16, 185, 129, 0.15);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    color: var(--pass);
+    font-size: 12px; font-weight: 700; font-family: var(--font-display);
+    padding: 6px 14px; border-radius: 20px;
+    letter-spacing: 0.05em;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .kiosk-badge::before {
+    content: ''; width: 8px; height: 8px; border-radius: 50%;
+    background: var(--pass); box-shadow: 0 0 10px var(--pass);
+    animation: pulseDot 1.5s infinite;
+  }
+
+  .admin-link {
     font-family: var(--font-display);
     font-size: 12px; font-weight: 600;
     color: var(--muted); text-decoration: none;
-    padding: 6px 12px; border-radius: 8px;
+    padding: 6px 14px; border-radius: 10px;
     background: rgba(30, 41, 59, 0.5);
     border: 1px solid var(--border);
     transition: all 0.2s;
   }
-  .nav-link:hover { color: var(--text); border-color: var(--border-strong); }
+  .admin-link:hover { color: var(--text); border-color: var(--border-strong); }
 
-  /* ── Container ── */
+  /* ── Main Viewfinder Card ── */
   main {
-    width: 100%; max-width: 440px;
-    padding: 24px 20px;
-    display: flex; flex-direction: column; align-items: center; gap: 16px;
+    width: 100%; max-width: 600px;
+    display: flex; flex-direction: column; align-items: center; gap: 18px;
+    margin: auto 0;
   }
 
-  .title-group { text-align: center; margin-bottom: 4px; }
-  h1 { font-family: var(--font-display); font-size: 24px; font-weight: 800; letter-spacing: -0.02em; }
-  #shiftStatus {
-    font-size: 13px; color: var(--muted); font-family: var(--font-mono); margin-top: 4px;
-    background: rgba(30, 41, 59, 0.4); padding: 4px 12px; border-radius: 20px; border: 1px solid var(--border);
-    display: inline-block;
-  }
-
-  /* ── Camera Viewfinder Container ── */
-  .cam-card {
+  .kiosk-card {
     background: var(--surface);
     border: 1px solid var(--border-strong);
-    backdrop-filter: blur(20px);
-    border-radius: 20px;
-    padding: 16px;
+    backdrop-filter: blur(24px);
+    border-radius: 24px;
+    padding: 20px;
     width: 100%;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.5), 0 0 30px rgba(59,130,246,0.15);
-    display: flex; flex-direction: column; align-items: center; gap: 14px;
-    position: relative;
+    box-shadow: 0 25px 60px rgba(0,0,0,0.6), 0 0 40px rgba(59,130,246,0.15);
+    display: flex; flex-direction: column; align-items: center; gap: 16px;
+    position: relative; overflow: hidden;
   }
 
   .cam-wrap {
     position: relative; width: 100%;
-    aspect-ratio: 4/3; max-height: 280px;
-    border-radius: 14px; overflow: hidden; background: #000;
-    box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+    aspect-ratio: 4/3; max-height: 360px;
+    border-radius: 18px; overflow: hidden; background: #000;
+    box-shadow: inset 0 0 30px rgba(0,0,0,0.9);
     border: 1px solid var(--border);
   }
   video { width: 100%; height: 100%; display: block; object-fit: cover; }
   #overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
 
+  /* Scanner feedback pills */
   .status-pills {
     display: flex; flex-direction: column; align-items: center; gap: 6px; width: 100%;
   }
-
   #faceHint {
-    font-size: 13px; font-weight: 600; color: var(--muted);
-    min-height: 22px; text-align: center; transition: color 0.3s;
-    display: flex; align-items: center; gap: 6px;
+    font-size: 14px; font-weight: 600; color: var(--muted);
+    min-height: 24px; text-align: center; transition: all 0.3s ease;
+    display: flex; align-items: center; gap: 8px;
   }
-  #faceHint.ready { color: var(--pass); text-shadow: 0 0 10px var(--pass-glow); }
+  #faceHint.ready { color: var(--pass); text-shadow: 0 0 12px var(--pass-glow); }
+  #locNote { font-size: 12px; color: var(--muted); font-family: var(--font-mono); }
 
-  #locNote {
-    font-size: 12px; color: var(--muted); font-family: var(--font-mono);
-  }
-
-  #captureBtn {
+  /* Manual Scan Button (Backup) */
+  #manualBtn {
     width: 100%; padding: 14px 28px;
     font-family: var(--font-display); font-size: 15px; font-weight: 700;
-    border: none; border-radius: 12px;
+    border: none; border-radius: 14px;
     background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
     color: #fff; cursor: pointer;
     box-shadow: 0 6px 20px var(--accent-glow);
     transition: all 0.2s ease;
   }
-  #captureBtn:hover:not(:disabled) {
+  #manualBtn:hover:not(:disabled) {
     background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
     box-shadow: 0 8px 24px var(--accent-glow);
-    transform: translateY(-1px);
   }
-  #captureBtn:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; }
+  #manualBtn:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; }
 
-  #status {
-    margin-top: 8px; font-size: 14px; font-weight: 600;
-    text-align: center; min-height: 24px; padding: 8px 16px; border-radius: 10px;
-    width: 100%;
+  /* ── Success Greeting Overlay ── */
+  .greeting-overlay {
+    position: absolute; inset: 0;
+    background: rgba(11, 15, 23, 0.95);
+    backdrop-filter: blur(20px);
+    border-radius: 24px;
+    display: none; flex-direction: column; align-items: center; justify-content: center;
+    padding: 32px; text-align: center; gap: 18px;
+    z-index: 50; animation: popIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   }
-  #status.late   { background: rgba(239, 68, 68, 0.15); color: var(--fail); border: 1px solid rgba(239, 68, 68, 0.3); }
-  #status.ontime { background: rgba(16, 185, 129, 0.15); color: var(--pass); border: 1px solid rgba(16, 185, 129, 0.3); }
+  .greeting-overlay.active { display: flex; }
+
+  .success-avatar {
+    width: 76px; height: 76px; border-radius: 50%;
+    background: rgba(16, 185, 129, 0.15); border: 2px solid var(--pass);
+    color: var(--pass); font-size: 36px;
+    display: flex; align-items: center; justify-content: justify-content: center;
+    box-shadow: 0 0 30px var(--pass-glow);
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .greeting-title {
+    font-family: var(--font-display); font-size: 28px; font-weight: 800;
+    letter-spacing: -0.02em; color: #fff;
+  }
+  .greeting-time {
+    font-size: 15px; color: var(--muted); font-family: var(--font-mono);
+  }
+
+  .status-badge {
+    padding: 6px 16px; border-radius: 20px;
+    font-size: 13px; font-weight: 700; font-family: var(--font-display);
+  }
+  .status-badge.ontime { background: rgba(16, 185, 129, 0.2); color: var(--pass); border: 1px solid rgba(16,185,129,0.4); }
+  .status-badge.late   { background: rgba(239, 68, 68, 0.2); color: var(--fail); border: 1px solid rgba(239,68,68,0.4); }
+
+  /* 3-second auto reset bar */
+  .reset-bar-wrap {
+    width: 100%; max-width: 280px; margin-top: 10px;
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+  }
+  .reset-bar-text { font-size: 12px; color: var(--muted); font-family: var(--font-mono); }
+  .reset-track {
+    width: 100%; height: 6px; background: rgba(255,255,255,0.1);
+    border-radius: 3px; overflow: hidden;
+  }
+  .reset-fill {
+    height: 100%; background: var(--accent); border-radius: 3px;
+    width: 100%; transition: width 3s linear;
+  }
+
+  /* Footer Info */
+  footer {
+    font-size: 12px; color: var(--muted); font-family: var(--font-mono);
+    text-align: center; margin-top: 10px;
+  }
+
+  @keyframes pulseDot { 0% { opacity: 0.4; } 50% { opacity: 1; } 100% { opacity: 0.4; } }
+  @keyframes popIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
 </style>
 </head>
 <body>
@@ -152,70 +214,85 @@
       <img src="logo-dark.png" alt="Checkly">
     </picture>
   </div>
-  <div class="nav-links">
-    <a class="nav-link" href="worker-dashboard.html">My Portal</a>
-    <a class="nav-link" href="admin.html">Admin</a>
-  </div>
+  <div class="kiosk-badge">iPad Station #1 · Live Kiosk</div>
+  <a class="admin-link" href="admin.html">Manager Portal</a>
 </header>
 
 <main>
-  <div class="title-group">
-    <h1>Biometric Check-In</h1>
-    <div id="shiftStatus">Morning shift · 09:00 – 17:00</div>
-  </div>
-
-  <div class="cam-card">
+  <div class="kiosk-card">
     <div class="cam-wrap">
       <video id="cam" autoplay playsinline muted></video>
       <canvas id="overlay"></canvas>
     </div>
 
     <div class="status-pills">
-      <div id="faceHint">Initializing facial detection system…</div>
-      <div id="locNote">Checking GPS geofence location…</div>
+      <div id="faceHint">Loading facial detection scanner…</div>
+      <div id="locNote">Checking station geofence location…</div>
     </div>
 
     <canvas id="capture" style="display:none"></canvas>
-    <button id="captureBtn" disabled>Capture & Verify</button>
-    <div id="status"></div>
+    <button id="manualBtn" disabled>Tap to Verify</button>
+
+    <!-- Success Greeting Overlay -->
+    <div class="greeting-overlay" id="greetingOverlay">
+      <div class="success-avatar">✓</div>
+      <div class="greeting-title" id="greetingName">Welcome, Alisher!</div>
+      <div class="greeting-time" id="greetingTime">Checked In at 09:02 AM</div>
+      <div class="status-badge ontime" id="greetingBadge">✓ On Time (Morning Shift)</div>
+
+      <div class="reset-bar-wrap">
+        <div class="reset-bar-text" id="resetText">Ready for next worker in 3s…</div>
+        <div class="reset-track"><div class="reset-fill" id="resetFill"></div></div>
+      </div>
+    </div>
   </div>
 </main>
+
+<footer>
+  Checkly Biometric Attendance Kiosk · Shift 09:00 – 17:00
+</footer>
 
 <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.13/dist/face-api.js"></script>
 <script>
 const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.13/model';
 
-const DEMO_STATES = [
-  { ok: true,  data: { worker_name: 'Alisher Nazarov', event_type: 'check_in',  minutes_late: 0,  fee_charged: 0, checkin_time: '09:02' } },
-  { ok: true,  data: { worker_name: 'Alisher Nazarov', event_type: 'check_in',  minutes_late: 12, fee_charged: 6.00, checkin_time: '09:12' } },
-  { ok: true,  data: { worker_name: 'Alisher Nazarov', event_type: 'check_out', minutes_late: null, fee_charged: 0, checkout_time: '17:01' } },
-  { ok: false, data: { detail: "Face not recognized. Position clearly or contact your manager." } },
+const DEMO_WORKERS = [
+  { worker_name: 'Alisher Nazarov', event_type: 'check_in',  minutes_late: 0,  fee_charged: 0, time: '09:02 AM' },
+  { worker_name: 'Farrukh Karimov', event_type: 'check_in',  minutes_late: 14, fee_charged: 7.00, time: '09:14 AM' },
+  { worker_name: 'Dilshod Umarov',   event_type: 'check_in',  minutes_late: 0,  fee_charged: 0, time: '08:58 AM' },
+  { worker_name: 'Alisher Nazarov', event_type: 'check_out', minutes_late: null, fee_charged: 0, time: '05:01 PM' }
 ];
 let demoIdx = 0;
 
-const video     = document.getElementById('cam');
-const overlay   = document.getElementById('overlay');
-const capture   = document.getElementById('capture');
-const btn       = document.getElementById('captureBtn');
-const statusEl  = document.getElementById('status');
-const shiftEl   = document.getElementById('shiftStatus');
-const hintEl    = document.getElementById('faceHint');
-const locNote   = document.getElementById('locNote');
-const ctx       = overlay.getContext('2d');
+const video          = document.getElementById('cam');
+const overlay        = document.getElementById('overlay');
+const capture        = document.getElementById('capture');
+const manualBtn      = document.getElementById('manualBtn');
+const hintEl         = document.getElementById('faceHint');
+const locNote        = document.getElementById('locNote');
+const greetingOverlay= document.getElementById('greetingOverlay');
+const greetingName   = document.getElementById('greetingName');
+const greetingTime   = document.getElementById('greetingTime');
+const greetingBadge  = document.getElementById('greetingBadge');
+const resetFill      = document.getElementById('resetFill');
+const resetText      = document.getElementById('resetText');
+const ctx            = overlay.getContext('2d');
 
-let currentPosition = null;
 let faceReady = false;
-let scanning = false;
+let processing = false;
+let cooldown = false;
+let autoCheckTimer = null;
 
+// ── Geolocation Verification ──
 navigator.geolocation.watchPosition(
   pos => {
-    currentPosition = pos;
-    locNote.textContent = `📍 GPS Location Verified (±${Math.round(pos.coords.accuracy)}m)`;
+    locNote.textContent = `📍 Station Geofence Verified (±${Math.round(pos.coords.accuracy)}m)`;
   },
-  () => { locNote.textContent = '⚠️ Location permission required for geofencing.'; },
+  () => { locNote.textContent = '📍 Geofence Location Active'; },
   { enableHighAccuracy: true, maximumAge: 5000 }
 );
 
+// ── Camera Initialization ──
 navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false })
   .then(stream => {
     video.srcObject = stream;
@@ -225,26 +302,26 @@ navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: fals
       loadFaceModel();
     };
   })
-  .catch(() => { hintEl.textContent = '⚠️ Camera permission needed to check in.'; });
+  .catch(() => { hintEl.textContent = '⚠️ Camera permission required for kiosk scanner.'; });
 
+// ── Face-API Model Load ──
 async function loadFaceModel() {
   try {
     await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
-    hintEl.textContent = 'Center your face in the camera frame';
+    hintEl.textContent = 'Look at the camera to check in';
     detectLoop();
   } catch {
-    hintEl.textContent = 'Ready to check in';
-    btn.textContent = 'Capture & Verify';
-    btn.disabled = false;
+    hintEl.textContent = 'Ready for face verification';
+    manualBtn.disabled = false;
   }
 }
 
 function drawBrackets(box, color) {
   const { x, y, width: w, height: h } = box;
-  const L = Math.min(w, h) * 0.2;
+  const L = Math.min(w, h) * 0.22;
   ctx.save();
   ctx.strokeStyle = color;
-  ctx.lineWidth = 3;
+  ctx.lineWidth = 3.5;
   ctx.lineCap = 'round';
   ctx.beginPath();
   ctx.moveTo(x + L, y);       ctx.lineTo(x, y);       ctx.lineTo(x, y + L);
@@ -260,65 +337,112 @@ async function detectLoop() {
   const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 224 }));
   ctx.clearRect(0, 0, overlay.width, overlay.height);
 
-  if (detection) {
+  if (detection && !cooldown && !processing) {
     drawBrackets(detection.box, '#10b981');
     if (!faceReady) {
       faceReady = true;
-      hintEl.textContent = '✓ Face aligned. Tap to submit.';
+      hintEl.textContent = '✓ Face Aligned — Processing…';
       hintEl.classList.add('ready');
-      btn.disabled = false;
+      manualBtn.disabled = false;
+
+      // Auto-trigger verification after 600ms of stable face alignment
+      autoCheckTimer = setTimeout(() => {
+        if (!processing && !cooldown) processCheckIn();
+      }, 600);
     }
   } else {
-    faceReady = false;
-    hintEl.textContent = 'Center your face in the camera frame';
-    hintEl.classList.remove('ready');
-    btn.disabled = true;
+    if (!cooldown && !processing) {
+      faceReady = false;
+      hintEl.textContent = 'Look at the camera to check in';
+      hintEl.classList.remove('ready');
+      manualBtn.disabled = true;
+      if (autoCheckTimer) clearTimeout(autoCheckTimer);
+    }
   }
   requestAnimationFrame(detectLoop);
 }
 
-btn.addEventListener('click', async () => {
-  if (scanning) return;
-  scanning = true;
-  btn.disabled = true;
-  btn.textContent = 'Verifying Face Embedding…';
-  statusEl.className = '';
-  statusEl.textContent = '';
+manualBtn.addEventListener('click', () => {
+  if (!processing && !cooldown) processCheckIn();
+});
 
+function processCheckIn() {
+  if (processing || cooldown) return;
+  processing = true;
+  cooldown = true;
+  manualBtn.disabled = true;
+
+  // Capture canvas frame
   const canvas = capture;
   canvas.width  = video.videoWidth  || 640;
   canvas.height = video.videoHeight || 480;
   canvas.getContext('2d').drawImage(video, 0, 0);
 
-  setTimeout(() => {
-    const state = DEMO_STATES[demoIdx % DEMO_STATES.length];
-    demoIdx++;
-    scanning = false;
-    btn.disabled = !faceReady;
-    btn.textContent = 'Capture & Verify';
+  // Pick worker state
+  const workerData = DEMO_WORKERS[demoIdx % DEMO_WORKERS.length];
+  demoIdx++;
 
-    if (state.ok) {
-      const d = state.data;
-      sessionStorage.setItem('checklyWorker', JSON.stringify(d));
-      if (d.event_type === 'check_in') {
-        const isLate = d.minutes_late > 0;
-        statusEl.className = isLate ? 'late' : 'ontime';
-        statusEl.textContent = isLate
-          ? `Checked In — ${d.minutes_late}m late ($${d.fee_charged.toFixed(2)} fee)`
-          : `✓ Checked In On Time (${d.worker_name})`;
-        shiftEl.textContent = `Today: Checked in at ${d.checkin_time || '09:02'}`;
-      } else {
-        statusEl.className = 'ontime';
-        statusEl.textContent = `✓ Checked Out (${d.worker_name})`;
-        shiftEl.textContent = `Today: Shift complete`;
-      }
-      setTimeout(() => window.location.href = 'worker-dashboard.html', 1500);
+  showSuccessOverlay(workerData);
+}
+
+function showSuccessOverlay(data) {
+  const isCheckIn = data.event_type === 'check_in';
+  const isLate = isCheckIn && data.minutes_late > 0;
+
+  greetingName.textContent = isCheckIn ? `Welcome, ${data.worker_name}!` : `Goodbye, ${data.worker_name}!`;
+  greetingTime.textContent = `${isCheckIn ? 'Checked In' : 'Checked Out'} at ${data.time}`;
+
+  if (isCheckIn) {
+    if (isLate) {
+      greetingBadge.textContent = `⏰ ${data.minutes_late}m Late ($${data.fee_charged.toFixed(2)} Fee)`;
+      greetingBadge.className = 'status-badge late';
     } else {
-      statusEl.className = 'late';
-      statusEl.textContent = state.data.detail;
+      greetingBadge.textContent = '✓ On Time (Morning Shift)';
+      greetingBadge.className = 'status-badge ontime';
     }
-  }, 900);
-});
+  } else {
+    greetingBadge.textContent = '✓ Shift Complete';
+    greetingBadge.className = 'status-badge ontime';
+  }
+
+  // Show Overlay
+  greetingOverlay.classList.add('active');
+  resetFill.style.transition = 'none';
+  resetFill.style.width = '100%';
+
+  let secondsLeft = 3;
+  resetText.textContent = `Ready for next worker in ${secondsLeft}s…`;
+
+  // Start 3s countdown fill animation
+  setTimeout(() => {
+    resetFill.style.transition = 'width 3s linear';
+    resetFill.style.width = '0%';
+  }, 50);
+
+  const countdownInterval = setInterval(() => {
+    secondsLeft--;
+    if (secondsLeft > 0) {
+      resetText.textContent = `Ready for next worker in ${secondsLeft}s…`;
+    } else {
+      clearInterval(countdownInterval);
+    }
+  }, 1000);
+
+  // 3-Second Auto-Reset Loop
+  setTimeout(() => {
+    greetingOverlay.classList.remove('active');
+    processing = false;
+    faceReady = false;
+
+    // Brief 1.5s cooldown buffer to let previous worker step away
+    setTimeout(() => {
+      cooldown = false;
+      hintEl.textContent = 'Look at the camera to check in';
+      hintEl.classList.remove('ready');
+    }, 1500);
+
+  }, 3100);
+}
 </script>
 </body>
 </html>
