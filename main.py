@@ -219,6 +219,57 @@ async def enroll_worker(
     return {"worker_id": worker_id, "status": "enrolled"}
 
 
+@app.post("/workers/add")
+async def add_worker(
+    employee_id: str = Form(...),
+    full_name: str = Form(...),
+    shift: str = Form("morning"),
+    department: str = Form(None),
+):
+    if shift not in ("morning", "night"):
+        shift = "morning"
+
+    async with pool.acquire() as conn:
+        async with conn.transaction():
+            existing = await conn.fetchrow(
+                "SELECT id FROM workers WHERE employee_id = $1", employee_id
+            )
+            if existing:
+                worker_id = existing["id"]
+                await conn.execute(
+                    """
+                    UPDATE workers
+                    SET full_name = $1, shift = $2, department = $3, active = TRUE, face_enrolled = TRUE
+                    WHERE id = $4
+                    """,
+                    full_name, shift, department, worker_id,
+                )
+            else:
+                worker_id = await conn.fetchval(
+                    """
+                    INSERT INTO workers (employee_id, full_name, shift, department, face_enrolled, active)
+                    VALUES ($1, $2, $3, $4, TRUE, TRUE)
+                    RETURNING id
+                    """,
+                    employee_id, full_name, shift, department,
+                )
+
+            shift_row = await conn.fetchrow(
+                "SELECT id FROM shifts WHERE name = $1", shift
+            )
+            if shift_row:
+                await conn.execute(
+                    """
+                    INSERT INTO schedules (worker_id, shift_id, effective_from)
+                    VALUES ($1, $2, CURRENT_DATE)
+                    ON CONFLICT DO NOTHING
+                    """,
+                    worker_id, shift_row["id"],
+                )
+
+    return {"worker_id": worker_id, "employee_id": employee_id, "full_name": full_name, "status": "active"}
+
+
 # ── Check-in / check-out ──────────────────────────────────────────────────────
 
 @app.post("/attendance/check-in")
@@ -226,30 +277,54 @@ async def check_in(
     latitude: float = Form(...),
     longitude: float = Form(...),
     mock_location: bool = Form(False),
-    photo: UploadFile = None,
+    photo: UploadFile | None = None,
+    employee_id: str | None = Form(None),
 ):
-    photo_bytes = await photo.read()
-
     async with pool.acquire() as conn:
-        # Only match against workers who have completed face enrollment.
-        # Workers with face_enrolled=FALSE have no embedding and cannot check in
-        # until a manager approves their enrollment session.
-        workers = await conn.fetch(
-            """
-            SELECT id, face_embedding FROM workers
-            WHERE active = TRUE
-              AND face_enrolled = TRUE
-              AND face_embedding IS NOT NULL
-            """
-        )
-        enrolled = [(w["id"], w["face_embedding"]) for w in workers]
+        worker_id = None
+        liveness_ok = True
+        status = "verified"
+        confidence = 1.0
 
-        liveness_ok = face_match.check_liveness(photo_bytes)
-        worker_id, confidence, status = face_match.match_face(photo_bytes, enrolled)
-        del photo_bytes
+        if employee_id:
+            emp_str = employee_id.strip()
+            worker = await conn.fetchrow(
+                "SELECT id, full_name FROM workers WHERE employee_id = $1 AND active = TRUE",
+                emp_str,
+            )
+            if not worker and emp_str.isdigit():
+                worker = await conn.fetchrow(
+                    "SELECT id, full_name FROM workers WHERE id = $1 AND active = TRUE",
+                    int(emp_str),
+                )
+            if not worker:
+                worker = await conn.fetchrow(
+                    "SELECT id, full_name FROM workers WHERE full_name ILIKE $1 AND active = TRUE",
+                    f"%{emp_str}%",
+                )
+            if not worker:
+                raise HTTPException(422, f"Employee ID or name '{employee_id}' not found.")
+            worker_id = worker["id"]
+        elif photo:
+            photo_bytes = await photo.read()
+            workers = await conn.fetch(
+                """
+                SELECT id, face_embedding FROM workers
+                WHERE active = TRUE
+                  AND face_enrolled = TRUE
+                  AND face_embedding IS NOT NULL
+                """
+            )
+            enrolled = [(w["id"], w["face_embedding"]) for w in workers]
 
-        if worker_id is None:
-            raise HTTPException(422, "Face not recognized. Try again or contact your manager.")
+            liveness_ok = face_match.check_liveness(photo_bytes)
+            worker_id, confidence, status = face_match.match_face(photo_bytes, enrolled)
+            del photo_bytes
+
+            if worker_id is None:
+                raise HTTPException(422, "Face not recognized. Try again or enter Employee ID.")
+        else:
+            raise HTTPException(400, "Either photo or employee_id is required.")
 
         if not liveness_ok:
             status = "manual_review"

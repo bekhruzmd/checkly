@@ -374,19 +374,52 @@ sidebar {
       </div>
 
       <div class="page-view" id="view-import">
-        <div style="background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:28px;max-width:480px">
-          <h2 style="font-size:16px;font-weight:600;margin-bottom:12px">Workly Roster Import</h2>
-          <div class="field" style="margin-bottom:14px">
-            <label>Manager ID</label>
-            <input id="import-manager-id" type="number" placeholder="1">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(340px, 1fr));gap:20px">
+
+          <div style="background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:28px">
+            <h2 style="font-size:16px;font-weight:600;margin-bottom:12px">Add Single Test Worker</h2>
+            <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Add an individual employee ID directly to test kiosk check-ins and dashboard updates.</p>
+
+            <div class="field" style="margin-bottom:14px">
+              <label for="single-emp-id">Employee ID</label>
+              <input id="single-emp-id" type="text" placeholder="e.g. 4827">
+            </div>
+            <div class="field" style="margin-bottom:14px">
+              <label for="single-name">Full Name</label>
+              <input id="single-name" type="text" placeholder="e.g. Alex Johnson">
+            </div>
+            <div class="field" style="margin-bottom:14px">
+              <label for="single-shift">Shift</label>
+              <select id="single-shift">
+                <option value="morning">Morning (09:00 – 17:00)</option>
+                <option value="night">Night (17:00 – 01:00)</option>
+              </select>
+            </div>
+            <div class="field" style="margin-bottom:16px">
+              <label for="single-dept">Department (Optional)</label>
+              <input id="single-dept" type="text" placeholder="e.g. Warehouse">
+            </div>
+            <div class="error-msg" id="single-worker-error"></div>
+            <button class="btn btn-primary" id="single-worker-btn" style="width:100%">Add Worker</button>
+            <div id="single-worker-result" style="margin-top:14px;font-size:13px;color:var(--green);display:none"></div>
           </div>
-          <div class="field" style="margin-bottom:16px">
-            <label>CSV File (Optional)</label>
-            <input id="import-csv" type="file" accept=".csv">
+
+          <div style="background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:28px">
+            <h2 style="font-size:16px;font-weight:600;margin-bottom:12px">Workly Roster CSV Import</h2>
+            <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Import CSV roster file with columns: employee_id, full_name, shift, department.</p>
+            <div class="field" style="margin-bottom:14px">
+              <label>Manager ID</label>
+              <input id="import-manager-id" type="number" placeholder="1">
+            </div>
+            <div class="field" style="margin-bottom:16px">
+              <label>CSV File (Optional)</label>
+              <input id="import-csv" type="file" accept=".csv">
+            </div>
+            <div class="error-msg" id="import-error"></div>
+            <button class="btn btn-ghost" id="import-btn" style="width:100%">Run CSV Import</button>
+            <div id="import-result" style="margin-top:14px;font-size:13px;display:none"></div>
           </div>
-          <div class="error-msg" id="import-error"></div>
-          <button class="btn btn-primary" id="import-btn" style="width:100%">Run Import</button>
-          <div id="import-result" style="margin-top:14px;font-size:13px;display:none"></div>
+
         </div>
       </div>
 
@@ -602,6 +635,49 @@ async function loadQueue() {
     tbody.innerHTML = `<tr><td colspan="6" style="color:var(--red);text-align:center">${esc(String(e))}</td></tr>`;
   }
 }
+
+document.getElementById('single-worker-btn').addEventListener('click', async () => {
+  const empId = document.getElementById('single-emp-id').value.trim();
+  const name  = document.getElementById('single-name').value.trim();
+  const shift = document.getElementById('single-shift').value;
+  const dept  = document.getElementById('single-dept').value.trim();
+  const errEl = document.getElementById('single-worker-error');
+  const resEl = document.getElementById('single-worker-result');
+  errEl.textContent = '';
+  resEl.style.display = 'none';
+
+  if (!empId || !name) {
+    errEl.textContent = 'Employee ID and Full Name are required.';
+    return;
+  }
+
+  const form = new FormData();
+  form.append('employee_id', empId);
+  form.append('full_name', name);
+  form.append('shift', shift);
+  if (dept) form.append('department', dept);
+
+  try {
+    const resp = await fetch(`${API_BASE}/workers/add`, {
+      method: 'POST',
+      body: form,
+    });
+    const data = await resp.json();
+    if (!resp.ok) {
+      errEl.textContent = data.detail || 'Failed to add worker.';
+    } else {
+      resEl.style.display = 'block';
+      resEl.textContent = `✓ Worker "${name}" (ID #${empId}) active and ready for check-in!`;
+      document.getElementById('single-emp-id').value = '';
+      document.getElementById('single-name').value = '';
+      document.getElementById('single-dept').value = '';
+      await loadWorkers();
+      renderAttendance();
+    }
+  } catch (e) {
+    errEl.textContent = String(e);
+  }
+});
 
 function esc(str) {
   if (str == null) return '';
