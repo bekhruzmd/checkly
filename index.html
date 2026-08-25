@@ -3,87 +3,193 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Checkly — Check In</title>
+<title>Checkly — Kiosk Check In</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" href="favicon-light.png" media="(prefers-color-scheme: light)">
 <link rel="icon" type="image/png" href="favicon-dark.png" media="(prefers-color-scheme: dark)">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
-<meta name="theme-color" content="#181C22">
+<meta name="theme-color" content="#0B0F17">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #181C22; --panel: #242A32; --cream: #F2E7CE;
-    --brass: #C6903F; --late: #E4572E; --ontime: #4C9A76; --muted: #8993A1;
+    --bg: #0B0F17;
+    --bg-gradient: radial-gradient(circle at 50% 0%, #1e293b 0%, #0b0f17 80%);
+    --surface: rgba(22, 27, 34, 0.75);
+    --border: rgba(255, 255, 255, 0.08);
+    --border-strong: rgba(255, 255, 255, 0.16);
+    --text: #f1f5f9;
+    --muted: #94a3b8;
+    --accent: #3b82f6;
+    --accent-glow: rgba(59, 130, 246, 0.35);
+    --pass: #10b981;
+    --pass-glow: rgba(16, 185, 129, 0.25);
+    --fail: #ef4444;
+    --fail-glow: rgba(239, 68, 68, 0.25);
+    --warn: #f59e0b;
+
+    --font-display: 'Plus Jakarta Sans', system-ui, sans-serif;
+    --font-body: 'Inter', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
-    background: var(--bg); color: var(--cream);
-    font-family: system-ui, sans-serif;
+    background: var(--bg);
+    background-image: var(--bg-gradient);
+    background-attachment: fixed;
+    color: var(--text);
+    font-family: var(--font-body);
     display: flex; flex-direction: column; align-items: center;
-    padding: 28px 16px; min-height: 100vh;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
   }
-  h1 { font-size: 20px; font-weight: 600; margin-bottom: 4px; }
-  #shiftStatus { font-size: 13px; color: var(--muted); margin-bottom: 18px; min-height: 18px; }
+
+  /* ── Header Nav ── */
+  header {
+    width: 100%; max-width: 520px;
+    padding: 20px 20px 0;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand img { height: 32px; width: auto; filter: drop-shadow(0 0 10px rgba(59,130,246,0.3)); }
+  .nav-links { display: flex; gap: 12px; }
+  .nav-link {
+    font-family: var(--font-display);
+    font-size: 12px; font-weight: 600;
+    color: var(--muted); text-decoration: none;
+    padding: 6px 12px; border-radius: 8px;
+    background: rgba(30, 41, 59, 0.5);
+    border: 1px solid var(--border);
+    transition: all 0.2s;
+  }
+  .nav-link:hover { color: var(--text); border-color: var(--border-strong); }
+
+  /* ── Container ── */
+  main {
+    width: 100%; max-width: 440px;
+    padding: 24px 20px;
+    display: flex; flex-direction: column; align-items: center; gap: 16px;
+  }
+
+  .title-group { text-align: center; margin-bottom: 4px; }
+  h1 { font-family: var(--font-display); font-size: 24px; font-weight: 800; letter-spacing: -0.02em; }
+  #shiftStatus {
+    font-size: 13px; color: var(--muted); font-family: var(--font-mono); margin-top: 4px;
+    background: rgba(30, 41, 59, 0.4); padding: 4px 12px; border-radius: 20px; border: 1px solid var(--border);
+    display: inline-block;
+  }
+
+  /* ── Camera Viewfinder Container ── */
+  .cam-card {
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    backdrop-filter: blur(20px);
+    border-radius: 20px;
+    padding: 16px;
+    width: 100%;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.5), 0 0 30px rgba(59,130,246,0.15);
+    display: flex; flex-direction: column; align-items: center; gap: 14px;
+    position: relative;
+  }
 
   .cam-wrap {
-    position: relative; width: 100%; max-width: 360px;
+    position: relative; width: 100%;
+    aspect-ratio: 4/3; max-height: 280px;
     border-radius: 14px; overflow: hidden; background: #000;
-    box-shadow: 0 4px 32px rgba(0,0,0,.5);
+    box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+    border: 1px solid var(--border);
   }
-  video { width: 100%; display: block; max-height: 260px; object-fit: cover; }
+  video { width: 100%; height: 100%; display: block; object-fit: cover; }
   #overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
 
-  #faceHint {
-    margin-top: 10px; font-size: 13px; color: var(--muted);
-    min-height: 20px; text-align: center; transition: color .3s;
+  .status-pills {
+    display: flex; flex-direction: column; align-items: center; gap: 6px; width: 100%;
   }
-  #faceHint.ready { color: var(--ontime); }
 
-  #locNote { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  #faceHint {
+    font-size: 13px; font-weight: 600; color: var(--muted);
+    min-height: 22px; text-align: center; transition: color 0.3s;
+    display: flex; align-items: center; gap: 6px;
+  }
+  #faceHint.ready { color: var(--pass); text-shadow: 0 0 10px var(--pass-glow); }
+
+  #locNote {
+    font-size: 12px; color: var(--muted); font-family: var(--font-mono);
+  }
 
   #captureBtn {
-    margin-top: 18px; padding: 14px 28px; font-size: 16px; font-weight: 600;
-    border: none; border-radius: 10px; background: var(--brass); color: #181C22;
-    cursor: pointer; width: 100%; max-width: 360px; transition: opacity .2s;
+    width: 100%; padding: 14px 28px;
+    font-family: var(--font-display); font-size: 15px; font-weight: 700;
+    border: none; border-radius: 12px;
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    color: #fff; cursor: pointer;
+    box-shadow: 0 6px 20px var(--accent-glow);
+    transition: all 0.2s ease;
   }
-  #captureBtn:disabled { opacity: .35; cursor: default; }
+  #captureBtn:hover:not(:disabled) {
+    background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+    box-shadow: 0 8px 24px var(--accent-glow);
+    transform: translateY(-1px);
+  }
+  #captureBtn:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; }
 
   #status {
-    margin-top: 16px; font-size: 15px; font-weight: 500;
-    text-align: center; min-height: 24px;
+    margin-top: 8px; font-size: 14px; font-weight: 600;
+    text-align: center; min-height: 24px; padding: 8px 16px; border-radius: 10px;
+    width: 100%;
   }
-  #status.late   { color: var(--late); }
-  #status.ontime { color: var(--ontime); }
+  #status.late   { background: rgba(239, 68, 68, 0.15); color: var(--fail); border: 1px solid rgba(239, 68, 68, 0.3); }
+  #status.ontime { background: rgba(16, 185, 129, 0.15); color: var(--pass); border: 1px solid rgba(16, 185, 129, 0.3); }
 </style>
 </head>
 <body>
 
-<picture style="display:block;margin-bottom:16px">
-  <source srcset="logo-light.png" media="(prefers-color-scheme: light)">
-  <img src="logo-dark.png" alt="Checkly" style="height:40px;width:auto;">
-</picture>
-<h1>Check In / Out</h1>
-<div id="shiftStatus">Today: checked in at 09:03 — currently IN</div>
+<header>
+  <div class="brand">
+    <picture>
+      <source srcset="logo-light.png" media="(prefers-color-scheme: light)">
+      <img src="logo-dark.png" alt="Checkly">
+    </picture>
+  </div>
+  <div class="nav-links">
+    <a class="nav-link" href="worker-dashboard.html">My Portal</a>
+    <a class="nav-link" href="admin.html">Admin</a>
+  </div>
+</header>
 
-<div class="cam-wrap">
-  <video id="cam" autoplay playsinline muted></video>
-  <canvas id="overlay"></canvas>
-</div>
+<main>
+  <div class="title-group">
+    <h1>Biometric Check-In</h1>
+    <div id="shiftStatus">Morning shift · 09:00 – 17:00</div>
+  </div>
 
-<div id="faceHint">Loading face detection…</div>
-<div id="locNote">Getting location…</div>
-<canvas id="capture" style="display:none"></canvas>
-<button id="captureBtn">Capture &amp; Submit</button>
-<div id="status"></div>
+  <div class="cam-card">
+    <div class="cam-wrap">
+      <video id="cam" autoplay playsinline muted></video>
+      <canvas id="overlay"></canvas>
+    </div>
+
+    <div class="status-pills">
+      <div id="faceHint">Initializing facial detection system…</div>
+      <div id="locNote">Checking GPS geofence location…</div>
+    </div>
+
+    <canvas id="capture" style="display:none"></canvas>
+    <button id="captureBtn" disabled>Capture & Verify</button>
+    <div id="status"></div>
+  </div>
+</main>
 
 <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.13/dist/face-api.js"></script>
 <script>
 const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.13/model';
 
 const DEMO_STATES = [
-  { ok: true,  data: { worker_name: 'Alisher Nazarov', event_type: 'check_in',  minutes_late: 0,  fee_charged: 0    } },
-  { ok: true,  data: { worker_name: 'Alisher Nazarov', event_type: 'check_in',  minutes_late: 12, fee_charged: 6.00 } },
-  { ok: true,  data: { worker_name: 'Alisher Nazarov', event_type: 'check_out', minutes_late: null, fee_charged: 0  } },
-  { ok: false, data: { detail: "Face not recognized. Try again or contact your manager." } },
+  { ok: true,  data: { worker_name: 'Alisher Nazarov', event_type: 'check_in',  minutes_late: 0,  fee_charged: 0, checkin_time: '09:02' } },
+  { ok: true,  data: { worker_name: 'Alisher Nazarov', event_type: 'check_in',  minutes_late: 12, fee_charged: 6.00, checkin_time: '09:12' } },
+  { ok: true,  data: { worker_name: 'Alisher Nazarov', event_type: 'check_out', minutes_late: null, fee_charged: 0, checkout_time: '17:01' } },
+  { ok: false, data: { detail: "Face not recognized. Position clearly or contact your manager." } },
 ];
 let demoIdx = 0;
 
@@ -101,17 +207,15 @@ let currentPosition = null;
 let faceReady = false;
 let scanning = false;
 
-// ── Geolocation ──
 navigator.geolocation.watchPosition(
   pos => {
     currentPosition = pos;
-    locNote.textContent = `Location ready (±${Math.round(pos.coords.accuracy)}m)`;
+    locNote.textContent = `📍 GPS Location Verified (±${Math.round(pos.coords.accuracy)}m)`;
   },
-  () => { locNote.textContent = 'Location permission needed.'; },
+  () => { locNote.textContent = '⚠️ Location permission required for geofencing.'; },
   { enableHighAccuracy: true, maximumAge: 5000 }
 );
 
-// ── Camera ──
 navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false })
   .then(stream => {
     video.srcObject = stream;
@@ -121,22 +225,20 @@ navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: fals
       loadFaceModel();
     };
   })
-  .catch(() => { hintEl.textContent = 'Camera permission needed.'; });
+  .catch(() => { hintEl.textContent = '⚠️ Camera permission needed to check in.'; });
 
-// ── Load model ──
 async function loadFaceModel() {
   try {
     await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
-    hintEl.textContent = 'Position your face in the frame';
+    hintEl.textContent = 'Center your face in the camera frame';
     detectLoop();
   } catch {
-    hintEl.textContent = 'Position your face and tap to check in';
-    btn.textContent = 'Capture & Submit';
+    hintEl.textContent = 'Ready to check in';
+    btn.textContent = 'Capture & Verify';
     btn.disabled = false;
   }
 }
 
-// ── Corner bracket drawing ──
 function drawBrackets(box, color) {
   const { x, y, width: w, height: h } = box;
   const L = Math.min(w, h) * 0.2;
@@ -153,95 +255,70 @@ function drawBrackets(box, color) {
   ctx.restore();
 }
 
-// ── Detection loop ──
 async function detectLoop() {
-  if (scanning) { requestAnimationFrame(detectLoop); return; }
-
-  const dets = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions());
+  if (video.paused || video.ended) return;
+  const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 224 }));
   ctx.clearRect(0, 0, overlay.width, overlay.height);
 
-  if (dets.length > 0) {
-    drawBrackets(dets[0].box, '#4C9A76');
+  if (detection) {
+    drawBrackets(detection.box, '#10b981');
     if (!faceReady) {
       faceReady = true;
-      hintEl.textContent = 'Face detected — ready';
-      hintEl.className = 'ready';
-      btn.textContent = 'Capture & Submit';
+      hintEl.textContent = '✓ Face aligned. Tap to submit.';
+      hintEl.classList.add('ready');
       btn.disabled = false;
     }
   } else {
-    if (faceReady) {
-      faceReady = false;
-      hintEl.textContent = 'Position your face in the frame';
-      hintEl.className = '';
-      btn.textContent = 'Capture & Submit';
-      // keep button enabled in demo so the flow is always clickable
-    }
+    faceReady = false;
+    hintEl.textContent = 'Center your face in the camera frame';
+    hintEl.classList.remove('ready');
+    btn.disabled = true;
   }
-
   requestAnimationFrame(detectLoop);
 }
 
-// ── Capture & submit ──
 btn.addEventListener('click', async () => {
-  if (!currentPosition) { statusEl.textContent = 'Waiting for location…'; return; }
-
-  btn.disabled = true;
+  if (scanning) return;
   scanning = true;
-  statusEl.textContent = '';
+  btn.disabled = true;
+  btn.textContent = 'Verifying Face Embedding…';
   statusEl.className = '';
+  statusEl.textContent = '';
 
-  // Scan animation
-  let t = 0;
-  const scan = setInterval(() => {
-    ctx.clearRect(0, 0, overlay.width, overlay.height);
-    const y = (t % overlay.height);
-    const grad = ctx.createLinearGradient(0, y - 30, 0, y + 30);
-    grad.addColorStop(0,   'rgba(198,144,63,0)');
-    grad.addColorStop(0.5, 'rgba(198,144,63,0.25)');
-    grad.addColorStop(1,   'rgba(198,144,63,0)');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, y - 30, overlay.width, 60);
-    t += 12;
-  }, 16);
+  const canvas = capture;
+  canvas.width  = video.videoWidth  || 640;
+  canvas.height = video.videoHeight || 480;
+  canvas.getContext('2d').drawImage(video, 0, 0);
 
-  capture.width  = video.videoWidth;
-  capture.height = video.videoHeight;
-  capture.getContext('2d').drawImage(video, 0, 0);
-
-  await new Promise(r => setTimeout(r, 900));
-  clearInterval(scan);
-  ctx.clearRect(0, 0, overlay.width, overlay.height);
-
-  // Demo response
-  const { ok, data } = DEMO_STATES[demoIdx % DEMO_STATES.length];
-  demoIdx++;
-
-  if (!ok) {
-    statusEl.textContent = data.detail || 'Could not verify. Try again.';
-    statusEl.className = '';
+  setTimeout(() => {
+    const state = DEMO_STATES[demoIdx % DEMO_STATES.length];
+    demoIdx++;
     scanning = false;
-    btn.disabled = false;
-    detectLoop();
-  } else {
-    const now = new Date();
-    const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
-    const payload = { ...data };
-    if (data.event_type === 'check_in') {
-      payload.checkin_time = timeStr;
-    } else {
-      const prev = JSON.parse(sessionStorage.getItem('checklyWorker') || '{}');
-      payload.checkin_time = prev.checkin_time || '09:00';
-      payload.checkout_time = timeStr;
-    }
-    sessionStorage.setItem('checklyWorker', JSON.stringify(payload));
-    statusEl.textContent = 'Verified ✓';
-    statusEl.className = 'ontime';
-    setTimeout(() => { window.location.href = 'worker-dashboard.html'; }, 600);
-  }
-});
+    btn.disabled = !faceReady;
+    btn.textContent = 'Capture & Verify';
 
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+    if (state.ok) {
+      const d = state.data;
+      sessionStorage.setItem('checklyWorker', JSON.stringify(d));
+      if (d.event_type === 'check_in') {
+        const isLate = d.minutes_late > 0;
+        statusEl.className = isLate ? 'late' : 'ontime';
+        statusEl.textContent = isLate
+          ? `Checked In — ${d.minutes_late}m late ($${d.fee_charged.toFixed(2)} fee)`
+          : `✓ Checked In On Time (${d.worker_name})`;
+        shiftEl.textContent = `Today: Checked in at ${d.checkin_time || '09:02'}`;
+      } else {
+        statusEl.className = 'ontime';
+        statusEl.textContent = `✓ Checked Out (${d.worker_name})`;
+        shiftEl.textContent = `Today: Shift complete`;
+      }
+      setTimeout(() => window.location.href = 'worker-dashboard.html', 1500);
+    } else {
+      statusEl.className = 'late';
+      statusEl.textContent = state.data.detail;
+    }
+  }, 900);
+});
 </script>
 </body>
 </html>

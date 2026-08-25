@@ -3,144 +3,165 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Checkly — My Dashboard</title>
+<title>Checkly — Worker Portal</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" href="favicon-light.png" media="(prefers-color-scheme: light)">
 <link rel="icon" type="image/png" href="favicon-dark.png" media="(prefers-color-scheme: dark)">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
-<meta name="theme-color" content="#181511">
+<meta name="theme-color" content="#0B0F17">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg:      #181511;
-    --surface: #211E19;
-    --raised:  #2B2720;
-    --border:  #3A3530;
-    --text:    #D8E0EA;
-    --muted:   #636D7E;
-    --accent:  #5496D8;
-    --fee:     #C98A28;
-    --fail:    #D05448;
-    --pass:    #3C9E6F;
+    --bg: #0B0F17;
+    --bg-gradient: radial-gradient(circle at 50% -20%, #1e293b 0%, #0b0f17 80%);
+    --surface: rgba(22, 27, 34, 0.75);
+    --raised: rgba(30, 41, 59, 0.7);
+    --border: rgba(255, 255, 255, 0.08);
+    --border-strong: rgba(255, 255, 255, 0.16);
+    --text: #f1f5f9;
+    --muted: #94a3b8;
+    --accent: #3b82f6;
+    --accent-glow: rgba(59, 130, 246, 0.35);
+    --pass: #10b981;
+    --pass-glow: rgba(16, 185, 129, 0.25);
+    --fail: #ef4444;
+    --fail-glow: rgba(239, 68, 68, 0.25);
+    --warn: #f59e0b;
 
-    --font-display: 'Space Grotesk', system-ui, sans-serif;
-    --font-body:    'IBM Plex Sans', system-ui, sans-serif;
-    --font-mono:    'IBM Plex Mono', monospace;
+    --font-display: 'Plus Jakarta Sans', system-ui, sans-serif;
+    --font-body: 'Inter', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
-    background: var(--bg); color: var(--text);
+    background: var(--bg);
+    background-image: var(--bg-gradient);
+    background-attachment: fixed;
+    color: var(--text);
     font-family: var(--font-body);
-    min-height: 100vh; padding-bottom: 40px;
+    min-height: 100vh; padding-bottom: 50px;
+    -webkit-font-smoothing: antialiased;
   }
 
-  /* ── Header ── */
+  /* ── Topbar Navigation ── */
   header {
     display: flex; align-items: center; justify-content: space-between;
-    padding: 14px 20px; background: var(--surface);
+    padding: 16px 24px; background: var(--surface);
+    backdrop-filter: blur(16px);
     border-bottom: 1px solid var(--border);
-    position: sticky; top: 0; z-index: 10;
+    position: sticky; top: 0; z-index: 20;
   }
   .back-btn {
-    font-size: 14px; color: var(--accent); text-decoration: none; font-weight: 500;
-    font-family: var(--font-body);
-    display: flex; align-items: center; gap: 6px;
+    font-size: 13px; color: var(--accent); text-decoration: none; font-weight: 600;
+    font-family: var(--font-display);
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 12px; border-radius: 8px;
+    background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.25);
+    transition: all 0.2s;
   }
-  .header-title { font-size: 15px; font-weight: 600; font-family: var(--font-display); }
+  .back-btn:hover { background: rgba(59,130,246,0.2); }
+  .header-title { font-size: 15px; font-weight: 700; font-family: var(--font-display); }
   .header-date { font-size: 13px; color: var(--muted); font-family: var(--font-mono); }
 
-  /* ── Main layout ── */
+  /* ── Layout Container ── */
   .container {
-    max-width: 640px; margin: 0 auto;
-    padding: 20px 16px; display: flex; flex-direction: column; gap: 14px;
+    max-width: 720px; margin: 0 auto;
+    padding: 28px 20px; display: flex; flex-direction: column; gap: 20px;
   }
-  @media (min-width: 768px) { .container { padding: 32px 24px; gap: 20px; } }
-  @media (min-width: 1024px) { .container { max-width: 800px; } }
 
   /* ── Greeting ── */
-  .greeting { padding: 4px 0; }
-  .greeting-name { font-size: 22px; font-weight: 700; font-family: var(--font-display); letter-spacing: -0.02em; }
-  .greeting-sub { font-size: 14px; color: var(--muted); margin-top: 3px; font-family: var(--font-mono); }
-  @media (min-width: 768px) { .greeting-name { font-size: 26px; } }
+  .greeting { display: flex; flex-direction: column; gap: 4px; }
+  .greeting-name { font-size: 26px; font-weight: 800; font-family: var(--font-display); letter-spacing: -0.02em; }
+  .greeting-sub { font-size: 13px; color: var(--muted); font-family: var(--font-mono); }
 
   /* ── Cards ── */
   .card {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 12px; overflow: hidden;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    backdrop-filter: blur(16px);
+    border-radius: 16px; overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
   }
   .card-header {
-    padding: 14px 18px 0; font-size: 11px; font-weight: 500;
-    letter-spacing: 0.07em; color: var(--muted); text-transform: uppercase;
-    font-family: var(--font-body);
+    padding: 16px 20px 0; font-size: 11px; font-weight: 700;
+    letter-spacing: 0.08em; color: var(--muted); text-transform: uppercase;
+    font-family: var(--font-display);
   }
-  .card-body { padding: 14px 18px 18px; }
+  .card-body { padding: 16px 20px 20px; }
 
-  /* ── Today timeline ── */
+  /* ── Timeline ── */
   .timeline { display: flex; flex-direction: column; gap: 0; }
   .tl-row {
-    display: flex; align-items: center; gap: 14px; padding: 10px 0;
+    display: flex; align-items: center; gap: 16px; padding: 12px 0;
     border-bottom: 1px solid var(--border);
   }
   .tl-row:last-child { border-bottom: none; }
   .tl-dot {
-    width: 32px; height: 32px; border-radius: 50%;
+    width: 36px; height: 36px; border-radius: 10px;
     display: flex; align-items: center; justify-content: center;
-    font-size: 14px; flex-shrink: 0;
+    font-size: 15px; font-weight: 700; flex-shrink: 0;
   }
-  .tl-dot.done { background: rgba(60,158,111,.2); color: var(--pass); }
-  .tl-dot.pending { background: rgba(99,109,126,.12); color: var(--muted); }
-  .tl-dot.late-dot { background: rgba(208,84,72,.15); color: var(--fail); }
-  .tl-label { font-size: 13px; color: var(--muted); font-family: var(--font-body); }
-  .tl-value { font-size: 16px; font-weight: 600; margin-top: 1px; font-family: var(--font-mono); }
+  .tl-dot.done { background: rgba(16,185,129,0.15); color: var(--pass); border: 1px solid rgba(16,185,129,0.3); }
+  .tl-dot.pending { background: rgba(148,163,184,0.1); color: var(--muted); border: 1px solid var(--border); }
+  .tl-dot.late-dot { background: rgba(239,68,68,0.15); color: var(--fail); border: 1px solid rgba(239,68,68,0.3); }
+
+  .tl-label { font-size: 12px; color: var(--muted); }
+  .tl-value { font-size: 16px; font-weight: 700; margin-top: 2px; font-family: var(--font-mono); }
   .tl-meta { margin-left: auto; text-align: right; }
+
   .badge {
-    display: inline-block; padding: 3px 10px; border-radius: 20px;
-    font-size: 12px; font-weight: 500;
+    display: inline-block; padding: 4px 10px; border-radius: 20px;
+    font-size: 11px; font-weight: 600;
   }
-  .badge-ontime { background: rgba(60,158,111,.14); color: var(--pass); }
-  .badge-late   { background: rgba(208,84,72,.14);  color: var(--fail); }
-  .badge-pending{ background: rgba(99,109,126,.12); color: var(--muted); }
+  .badge-ontime { background: rgba(16,185,129,0.15); color: var(--pass); border: 1px solid rgba(16,185,129,0.3); }
+  .badge-late   { background: rgba(239,68,68,0.15);  color: var(--fail); border: 1px solid rgba(239,68,68,0.3); }
+  .badge-pending{ background: rgba(148,163,184,0.1); color: var(--muted); border: 1px solid var(--border); }
 
   .fee-row {
-    margin-top: 12px; padding: 10px 14px;
-    background: rgba(201,138,40,.08); border-radius: 8px;
-    display: flex; justify-content: space-between; align-items: center;
-    font-size: 14px; color: var(--muted);
+    margin-top: 14px; padding: 12px 16px;
+    background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.3);
+    border-radius: 10px; display: flex; justify-content: space-between; align-items: center;
+    font-size: 13px; color: var(--warn);
   }
-  .fee-row strong { color: var(--fee); font-size: 16px; font-family: var(--font-mono); }
+  .fee-row strong { color: var(--warn); font-size: 16px; font-family: var(--font-mono); }
 
-  /* ── Progress bar ── */
-  .shift-progress { margin-top: 14px; }
-  .progress-label { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
-  .progress-track { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
-  .progress-fill  { height: 100%; background: var(--accent); border-radius: 3px; transition: width .5s; }
+  /* ── Progress Track ── */
+  .shift-progress { margin-top: 16px; }
+  .progress-label { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-bottom: 8px; font-family: var(--font-mono); }
+  .progress-track { height: 8px; background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border); border-radius: 4px; overflow: hidden; }
+  .progress-fill  { height: 100%; background: linear-gradient(90deg, #3b82f6, #60a5fa); border-radius: 4px; transition: width .5s; }
 
-  /* ── Week table ── */
-  .week-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  /* ── Week Table ── */
+  .week-table { width: 100%; border-collapse: collapse; font-size: 13px; }
   .week-table th {
     text-align: left; font-size: 11px; color: var(--muted);
-    text-transform: uppercase; letter-spacing: 0.06em; padding: 6px 0; font-weight: 500;
-    font-family: var(--font-body);
+    text-transform: uppercase; letter-spacing: 0.06em; padding: 8px 0; font-weight: 600;
   }
-  .week-table td { padding: 9px 0; border-top: 1px solid var(--border); font-family: var(--font-mono); font-size: 13px; }
+  .week-table td { padding: 11px 0; border-top: 1px solid var(--border); font-family: var(--font-mono); }
   .week-table td:last-child { text-align: right; }
-  .today-row-week { font-weight: 500; color: var(--text); }
+  .today-row-week { font-weight: 700; color: var(--text); }
 
-  /* ── Two-column on tablet+ ── */
-  .two-col { display: grid; grid-template-columns: 1fr; gap: 14px; }
+  /* ── Two Column ── */
+  .two-col { display: grid; grid-template-columns: 1fr; gap: 16px; }
   @media (min-width: 640px) { .two-col { grid-template-columns: 1fr 1fr; gap: 20px; } }
 
-  /* ── Action button ── */
+  /* ── Checkout Button ── */
   .btn-checkout {
-    width: 100%; padding: 15px; font-size: 16px; font-weight: 600;
-    border: 1px solid var(--border); border-radius: 10px; background: var(--surface);
-    color: var(--text); font-family: var(--font-display);
-    cursor: pointer; transition: background .15s;
+    width: 100%; padding: 16px; font-size: 15px; font-weight: 700;
+    border: 1px solid var(--border-strong); border-radius: 14px;
+    background: var(--surface); color: var(--text);
+    font-family: var(--font-display); cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.4);
   }
-  .btn-checkout:hover { background: var(--raised); }
-  .btn-checkout.checkin-mode { background: var(--accent); color: #fff; border-color: transparent; }
+  .btn-checkout:hover { background: rgba(30, 41, 59, 0.9); transform: translateY(-1px); }
+  .btn-checkout.checkin-mode {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    color: #fff; border-color: transparent;
+    box-shadow: 0 6px 20px var(--accent-glow);
+  }
 </style>
 </head>
 <body>
@@ -148,7 +169,7 @@
 <header>
   <a class="back-btn" href="index.html">
     <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M15 19l-7-7 7-7"/></svg>
-    Check In/Out
+    Kiosk Check In
   </a>
   <span class="header-title">My Attendance</span>
   <span class="header-date" id="todayDate"></span>
@@ -161,25 +182,25 @@
     <div class="greeting-sub" id="shiftLabel">Morning shift · 09:00 – 17:00</div>
   </div>
 
-  <!-- Today -->
+  <!-- Today card -->
   <div class="card">
-    <div class="card-header">Today</div>
+    <div class="card-header">Today's Shift Activity</div>
     <div class="card-body">
       <div class="timeline">
         <div class="tl-row">
           <div class="tl-dot done" id="checkinDot">✓</div>
           <div>
-            <div class="tl-label">Checked in</div>
+            <div class="tl-label">Check In Time</div>
             <div class="tl-value" id="checkinTime">09:02</div>
           </div>
           <div class="tl-meta">
-            <span class="badge badge-ontime" id="checkinBadge">On time</span>
+            <span class="badge badge-ontime" id="checkinBadge">On Time</span>
           </div>
         </div>
         <div class="tl-row">
           <div class="tl-dot pending" id="checkoutDot">○</div>
           <div>
-            <div class="tl-label">Check out</div>
+            <div class="tl-label">Check Out Time</div>
             <div class="tl-value" id="checkoutTime">—</div>
           </div>
           <div class="tl-meta">
@@ -187,36 +208,38 @@
           </div>
         </div>
       </div>
+
       <div class="fee-row" id="feeRow" style="display:none">
-        Late fee applied <strong id="feeAmount">$0.00</strong>
+        Late Penalty Applied <strong id="feeAmount">$0.00</strong>
       </div>
+
       <div class="shift-progress" id="progressWrap">
         <div class="progress-label">
-          <span>09:00 shift start</span>
-          <span id="progressPct">—</span>
-          <span>17:00 end</span>
+          <span>09:00 Shift Start</span>
+          <span id="progressPct">0%</span>
+          <span>17:00 Shift End</span>
         </div>
         <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
       </div>
     </div>
   </div>
 
-  <!-- Stats + week -->
+  <!-- Stats & Week -->
   <div class="two-col">
     <div class="card">
-      <div class="card-header">This Month</div>
+      <div class="card-header">Monthly Attendance</div>
       <div class="card-body">
-        <div style="display:flex;gap:20px;flex-wrap:wrap">
+        <div style="display:flex;gap:24px;flex-wrap:wrap">
           <div>
-            <div style="font-size:28px;font-weight:700;color:var(--pass);font-family:var(--font-display)" id="statOnTime">18</div>
+            <div style="font-size:30px;font-weight:800;color:var(--pass);font-family:var(--font-display)" id="statOnTime">18</div>
             <div style="font-size:12px;color:var(--muted);margin-top:2px">On time</div>
           </div>
           <div>
-            <div style="font-size:28px;font-weight:700;color:var(--fail);font-family:var(--font-display)" id="statLate">2</div>
+            <div style="font-size:30px;font-weight:800;color:var(--fail);font-family:var(--font-display)" id="statLate">2</div>
             <div style="font-size:12px;color:var(--muted);margin-top:2px">Late</div>
           </div>
           <div>
-            <div style="font-size:28px;font-weight:700;font-family:var(--font-mono)" id="statFees">$9.00</div>
+            <div style="font-size:30px;font-weight:800;font-family:var(--font-mono)" id="statFees">$9.00</div>
             <div style="font-size:12px;color:var(--muted);margin-top:2px">Total fees</div>
           </div>
         </div>
@@ -224,7 +247,7 @@
     </div>
 
     <div class="card">
-      <div class="card-header">This Week</div>
+      <div class="card-header">Weekly History</div>
       <div class="card-body" style="padding-top:10px">
         <table class="week-table">
           <tbody id="weekBody"></tbody>
@@ -247,7 +270,6 @@ const WEEK = [
   { day: 'Sat', date: '26', in: '—',    late: null, status: 'today' },
 ];
 
-// Read data passed from check-in page
 const saved = JSON.parse(sessionStorage.getItem('checklyWorker') || 'null');
 const data = saved || {
   worker_name: 'Alisher Nazarov',
@@ -258,21 +280,18 @@ const data = saved || {
   checkout_time: null,
 };
 
-// Greeting
 const hour = new Date().getHours();
 const greet = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
 const firstName = (data.worker_name || 'Worker').split(' ')[0];
 document.getElementById('greetingText').textContent = `${greet}, ${firstName}`;
 
-// Date
 const now = new Date();
 document.getElementById('todayDate').textContent = now.toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' });
 
-// Check-in row
 if (data.checkin_time) {
   document.getElementById('checkinTime').textContent = data.checkin_time;
   if (data.minutes_late > 0) {
-    document.getElementById('checkinBadge').textContent = `${data.minutes_late} min late`;
+    document.getElementById('checkinBadge').textContent = `${data.minutes_late}m Late`;
     document.getElementById('checkinBadge').className = 'badge badge-late';
     document.getElementById('checkinDot').className = 'tl-dot late-dot';
     document.getElementById('checkinDot').textContent = '!';
@@ -283,27 +302,24 @@ if (data.checkin_time) {
   }
 }
 
-// Check-out row
 if (data.event_type === 'check_out' && data.checkout_time) {
   document.getElementById('checkoutTime').textContent = data.checkout_time;
   document.getElementById('checkoutDot').className = 'tl-dot done';
   document.getElementById('checkoutDot').textContent = '✓';
-  document.getElementById('checkoutBadge').textContent = 'Done';
+  document.getElementById('checkoutBadge').textContent = 'Completed';
   document.getElementById('checkoutBadge').className = 'badge badge-ontime';
   document.getElementById('actionBtn').textContent = '← Check In Again';
   document.getElementById('actionBtn').classList.add('checkin-mode');
   document.getElementById('progressWrap').style.display = 'none';
 }
 
-// Shift progress (morning shift 09:00–17:00)
 const shiftStart = new Date(); shiftStart.setHours(9, 0, 0, 0);
 const shiftEnd   = new Date(); shiftEnd.setHours(17, 0, 0, 0);
 const elapsed = Math.max(0, Math.min(now - shiftStart, shiftEnd - shiftStart));
 const pct = Math.round((elapsed / (shiftEnd - shiftStart)) * 100);
 document.getElementById('progressFill').style.width = pct + '%';
-document.getElementById('progressPct').textContent = pct + '% through';
+document.getElementById('progressPct').textContent = pct + '% through shift';
 
-// Week table
 const wb = document.getElementById('weekBody');
 wb.innerHTML = WEEK.map(r => {
   const isToday = r.status === 'today';
@@ -313,7 +329,7 @@ wb.innerHTML = WEEK.map(r => {
       ? `<span class="badge badge-late">+${r.late}m</span>`
       : `<span class="badge badge-ontime">✓</span>`;
   return `<tr class="${isToday ? 'today-row-week' : ''}">
-    <td style="color:var(--muted);width:36px">${r.day}</td>
+    <td style="color:var(--muted);width:40px">${r.day}</td>
     <td>${r.in}</td>
     <td>${badge}</td>
   </tr>`;
