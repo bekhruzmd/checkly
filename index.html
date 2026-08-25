@@ -44,7 +44,7 @@
     font-family: var(--font-body);
     display: flex; flex-direction: column; align-items: center; justify-content: space-between;
     min-height: 100vh;
-    padding: 20px;
+    padding: 24px;
     user-select: none;
     -webkit-user-select: none;
     touch-action: manipulation;
@@ -52,21 +52,21 @@
     overflow: hidden;
   }
 
-  /* ── iPad Topbar ── */
+  /* ── iPad Topbar Header ── */
   header {
-    width: 100%; max-width: 640px;
+    width: 100%; max-width: 680px;
     display: flex; align-items: center; justify-content: space-between;
-    padding: 10px 0;
+    padding: 8px 0;
   }
   .brand { display: flex; align-items: center; gap: 12px; }
-  .brand img { height: 36px; width: auto; filter: drop-shadow(0 0 10px rgba(59,130,246,0.35)); }
+  .brand img { height: 40px; width: auto; filter: drop-shadow(0 0 12px rgba(59,130,246,0.35)); }
 
   .kiosk-badge {
     background: rgba(16, 185, 129, 0.15);
     border: 1px solid rgba(16, 185, 129, 0.3);
     color: var(--pass);
-    font-size: 12px; font-weight: 700; font-family: var(--font-display);
-    padding: 6px 14px; border-radius: 20px;
+    font-size: 13px; font-weight: 700; font-family: var(--font-display);
+    padding: 7px 16px; border-radius: 20px;
     letter-spacing: 0.05em;
     display: flex; align-items: center; gap: 8px;
   }
@@ -76,20 +76,9 @@
     animation: pulseDot 1.5s infinite;
   }
 
-  .admin-link {
-    font-family: var(--font-display);
-    font-size: 12px; font-weight: 600;
-    color: var(--muted); text-decoration: none;
-    padding: 6px 14px; border-radius: 10px;
-    background: rgba(30, 41, 59, 0.5);
-    border: 1px solid var(--border);
-    transition: all 0.2s;
-  }
-  .admin-link:hover { color: var(--text); border-color: var(--border-strong); }
-
-  /* ── Main Viewfinder Card ── */
+  /* ── Viewfinder Card ── */
   main {
-    width: 100%; max-width: 600px;
+    width: 100%; max-width: 640px;
     display: flex; flex-direction: column; align-items: center; gap: 18px;
     margin: auto 0;
   }
@@ -99,16 +88,16 @@
     border: 1px solid var(--border-strong);
     backdrop-filter: blur(24px);
     border-radius: 24px;
-    padding: 20px;
+    padding: 24px;
     width: 100%;
     box-shadow: 0 25px 60px rgba(0,0,0,0.6), 0 0 40px rgba(59,130,246,0.15);
-    display: flex; flex-direction: column; align-items: center; gap: 16px;
+    display: flex; flex-direction: column; align-items: center; gap: 18px;
     position: relative; overflow: hidden;
   }
 
   .cam-wrap {
     position: relative; width: 100%;
-    aspect-ratio: 4/3; max-height: 360px;
+    aspect-ratio: 4/3; max-height: 380px;
     border-radius: 18px; overflow: hidden; background: #000;
     box-shadow: inset 0 0 30px rgba(0,0,0,0.9);
     border: 1px solid var(--border);
@@ -116,22 +105,23 @@
   video { width: 100%; height: 100%; display: block; object-fit: cover; }
   #overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
 
-  /* Scanner feedback pills */
+  /* Status Feedback */
   .status-pills {
     display: flex; flex-direction: column; align-items: center; gap: 6px; width: 100%;
   }
   #faceHint {
-    font-size: 14px; font-weight: 600; color: var(--muted);
-    min-height: 24px; text-align: center; transition: all 0.3s ease;
+    font-size: 15px; font-weight: 600; color: var(--muted);
+    min-height: 26px; text-align: center; transition: all 0.3s ease;
     display: flex; align-items: center; gap: 8px;
   }
   #faceHint.ready { color: var(--pass); text-shadow: 0 0 12px var(--pass-glow); }
+  #faceHint.error { color: var(--fail); text-shadow: 0 0 12px var(--fail-glow); }
   #locNote { font-size: 12px; color: var(--muted); font-family: var(--font-mono); }
 
-  /* Manual Scan Button (Backup) */
+  /* Tap Check-In Button */
   #manualBtn {
-    width: 100%; padding: 14px 28px;
-    font-family: var(--font-display); font-size: 15px; font-weight: 700;
+    width: 100%; padding: 15px 28px;
+    font-family: var(--font-display); font-size: 16px; font-weight: 700;
     border: none; border-radius: 14px;
     background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
     color: #fff; cursor: pointer;
@@ -147,26 +137,25 @@
   /* ── Success Greeting Overlay ── */
   .greeting-overlay {
     position: absolute; inset: 0;
-    background: rgba(11, 15, 23, 0.95);
-    backdrop-filter: blur(20px);
+    background: rgba(11, 15, 23, 0.96);
+    backdrop-filter: blur(24px);
     border-radius: 24px;
     display: none; flex-direction: column; align-items: center; justify-content: center;
-    padding: 32px; text-align: center; gap: 18px;
+    padding: 36px; text-align: center; gap: 20px;
     z-index: 50; animation: popIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   }
   .greeting-overlay.active { display: flex; }
 
   .success-avatar {
-    width: 76px; height: 76px; border-radius: 50%;
+    width: 80px; height: 80px; border-radius: 50%;
     background: rgba(16, 185, 129, 0.15); border: 2px solid var(--pass);
-    color: var(--pass); font-size: 36px;
-    display: flex; align-items: center; justify-content: justify-content: center;
-    box-shadow: 0 0 30px var(--pass-glow);
+    color: var(--pass); font-size: 40px; font-weight: 800;
+    box-shadow: 0 0 35px var(--pass-glow);
     display: flex; align-items: center; justify-content: center;
   }
 
   .greeting-title {
-    font-family: var(--font-display); font-size: 28px; font-weight: 800;
+    font-family: var(--font-display); font-size: 30px; font-weight: 800;
     letter-spacing: -0.02em; color: #fff;
   }
   .greeting-time {
@@ -174,15 +163,15 @@
   }
 
   .status-badge {
-    padding: 6px 16px; border-radius: 20px;
-    font-size: 13px; font-weight: 700; font-family: var(--font-display);
+    padding: 7px 18px; border-radius: 20px;
+    font-size: 14px; font-weight: 700; font-family: var(--font-display);
   }
   .status-badge.ontime { background: rgba(16, 185, 129, 0.2); color: var(--pass); border: 1px solid rgba(16,185,129,0.4); }
   .status-badge.late   { background: rgba(239, 68, 68, 0.2); color: var(--fail); border: 1px solid rgba(239,68,68,0.4); }
 
   /* 3-second auto reset bar */
   .reset-bar-wrap {
-    width: 100%; max-width: 280px; margin-top: 10px;
+    width: 100%; max-width: 300px; margin-top: 10px;
     display: flex; flex-direction: column; align-items: center; gap: 8px;
   }
   .reset-bar-text { font-size: 12px; color: var(--muted); font-family: var(--font-mono); }
@@ -195,7 +184,6 @@
     width: 100%; transition: width 3s linear;
   }
 
-  /* Footer Info */
   footer {
     font-size: 12px; color: var(--muted); font-family: var(--font-mono);
     text-align: center; margin-top: 10px;
@@ -214,8 +202,7 @@
       <img src="logo-dark.png" alt="Checkly">
     </picture>
   </div>
-  <div class="kiosk-badge">iPad Station #1 · Live Kiosk</div>
-  <a class="admin-link" href="admin.html">Manager Portal</a>
+  <div class="kiosk-badge">Checkly Station #1 · Live Kiosk</div>
 </header>
 
 <main>
@@ -227,18 +214,18 @@
 
     <div class="status-pills">
       <div id="faceHint">Loading facial detection scanner…</div>
-      <div id="locNote">Checking station geofence location…</div>
+      <div id="locNote">Checking station location…</div>
     </div>
 
     <canvas id="capture" style="display:none"></canvas>
-    <button id="manualBtn" disabled>Tap to Verify</button>
+    <button id="manualBtn" disabled>Step in Frame to Check In</button>
 
-    <!-- Success Greeting Overlay -->
+    <!-- Real Success Greeting Overlay -->
     <div class="greeting-overlay" id="greetingOverlay">
       <div class="success-avatar">✓</div>
-      <div class="greeting-title" id="greetingName">Welcome, Alisher!</div>
-      <div class="greeting-time" id="greetingTime">Checked In at 09:02 AM</div>
-      <div class="status-badge ontime" id="greetingBadge">✓ On Time (Morning Shift)</div>
+      <div class="greeting-title" id="greetingName">Welcome!</div>
+      <div class="greeting-time" id="greetingTime">Checked In</div>
+      <div class="status-badge ontime" id="greetingBadge">✓ Checked In On Time</div>
 
       <div class="reset-bar-wrap">
         <div class="reset-bar-text" id="resetText">Ready for next worker in 3s…</div>
@@ -249,20 +236,13 @@
 </main>
 
 <footer>
-  Checkly Biometric Attendance Kiosk · Shift 09:00 – 17:00
+  Checkly Live Attendance Station · Autonomous Kiosk Mode
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.13/dist/face-api.js"></script>
 <script>
 const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.13/model';
-
-const DEMO_WORKERS = [
-  { worker_name: 'Alisher Nazarov', event_type: 'check_in',  minutes_late: 0,  fee_charged: 0, time: '09:02 AM' },
-  { worker_name: 'Farrukh Karimov', event_type: 'check_in',  minutes_late: 14, fee_charged: 7.00, time: '09:14 AM' },
-  { worker_name: 'Dilshod Umarov',   event_type: 'check_in',  minutes_late: 0,  fee_charged: 0, time: '08:58 AM' },
-  { worker_name: 'Alisher Nazarov', event_type: 'check_out', minutes_late: null, fee_charged: 0, time: '05:01 PM' }
-];
-let demoIdx = 0;
+const API_BASE  = localStorage.getItem('API_BASE') || 'http://localhost:8000';
 
 const video          = document.getElementById('cam');
 const overlay        = document.getElementById('overlay');
@@ -278,17 +258,19 @@ const resetFill      = document.getElementById('resetFill');
 const resetText      = document.getElementById('resetText');
 const ctx            = overlay.getContext('2d');
 
+let currentPosition = { latitude: 41.311082, longitude: 69.240562 }; // Default office coords fallback
 let faceReady = false;
 let processing = false;
 let cooldown = false;
 let autoCheckTimer = null;
 
-// ── Geolocation Verification ──
+// ── Geolocation Listener ──
 navigator.geolocation.watchPosition(
   pos => {
-    locNote.textContent = `📍 Station Geofence Verified (±${Math.round(pos.coords.accuracy)}m)`;
+    currentPosition = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+    locNote.textContent = `📍 Geofence Verified (±${Math.round(pos.coords.accuracy)}m)`;
   },
-  () => { locNote.textContent = '📍 Geofence Location Active'; },
+  () => { locNote.textContent = '📍 Geofence Station Active'; },
   { enableHighAccuracy: true, maximumAge: 5000 }
 );
 
@@ -304,7 +286,7 @@ navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: fals
   })
   .catch(() => { hintEl.textContent = '⚠️ Camera permission required for kiosk scanner.'; });
 
-// ── Face-API Model Load ──
+// ── Load Face API ──
 async function loadFaceModel() {
   try {
     await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
@@ -326,7 +308,7 @@ function drawBrackets(box, color) {
   ctx.beginPath();
   ctx.moveTo(x + L, y);       ctx.lineTo(x, y);       ctx.lineTo(x, y + L);
   ctx.moveTo(x+w-L, y);       ctx.lineTo(x+w, y);     ctx.lineTo(x+w, y + L);
-  ctx.moveTo(x + L, y+h);     ctx.lineTo(x, y+h);     ctx.lineTo(x, y+h-L);
+  ctx.moveTo(x + L, y+h);     ctx.lineTo(x, y);       ctx.lineTo(x, y+h-L);
   ctx.moveTo(x+w-L, y+h);     ctx.lineTo(x+w, y+h);   ctx.lineTo(x+w, y+h-L);
   ctx.stroke();
   ctx.restore();
@@ -341,20 +323,19 @@ async function detectLoop() {
     drawBrackets(detection.box, '#10b981');
     if (!faceReady) {
       faceReady = true;
-      hintEl.textContent = '✓ Face Aligned — Processing…';
-      hintEl.classList.add('ready');
+      hintEl.textContent = '✓ Face Aligned — Scanning embedding…';
+      hintEl.className = 'ready';
       manualBtn.disabled = false;
 
-      // Auto-trigger verification after 600ms of stable face alignment
       autoCheckTimer = setTimeout(() => {
-        if (!processing && !cooldown) processCheckIn();
-      }, 600);
+        if (!processing && !cooldown) processRealCheckIn();
+      }, 700);
     }
   } else {
     if (!cooldown && !processing) {
       faceReady = false;
       hintEl.textContent = 'Look at the camera to check in';
-      hintEl.classList.remove('ready');
+      hintEl.className = '';
       manualBtn.disabled = true;
       if (autoCheckTimer) clearTimeout(autoCheckTimer);
     }
@@ -363,26 +344,61 @@ async function detectLoop() {
 }
 
 manualBtn.addEventListener('click', () => {
-  if (!processing && !cooldown) processCheckIn();
+  if (!processing && !cooldown) processRealCheckIn();
 });
 
-function processCheckIn() {
+async function processRealCheckIn() {
   if (processing || cooldown) return;
   processing = true;
   cooldown = true;
   manualBtn.disabled = true;
+  hintEl.textContent = 'Verifying with live backend database…';
 
-  // Capture canvas frame
   const canvas = capture;
   canvas.width  = video.videoWidth  || 640;
   canvas.height = video.videoHeight || 480;
   canvas.getContext('2d').drawImage(video, 0, 0);
 
-  // Pick worker state
-  const workerData = DEMO_WORKERS[demoIdx % DEMO_WORKERS.length];
-  demoIdx++;
+  canvas.toBlob(async (blob) => {
+    const formData = new FormData();
+    formData.append('photo', blob, 'checkin.jpg');
+    formData.append('latitude', currentPosition.latitude);
+    formData.append('longitude', currentPosition.longitude);
 
-  showSuccessOverlay(workerData);
+    try {
+      const resp = await fetch(`${API_BASE}/attendance/check-in`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!resp.ok) {
+        let errDetail = 'Face embedding match failed.';
+        try {
+          const errData = await resp.json();
+          errDetail = errData.detail || errDetail;
+        } catch (e) {}
+        throw new Error(errDetail);
+      }
+
+      const data = await resp.json();
+      showSuccessOverlay({
+        worker_name: data.worker_name || 'Employee',
+        event_type: data.event_type || 'check_in',
+        minutes_late: data.minutes_late || 0,
+        fee_charged: data.fee_charged || 0,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      });
+    } catch (err) {
+      hintEl.textContent = `⚠️ ${err.message || 'Face not recognized'}`;
+      hintEl.className = 'error';
+      setTimeout(() => {
+        processing = false;
+        cooldown = false;
+        hintEl.className = '';
+        hintEl.textContent = 'Look at the camera to check in';
+      }, 2500);
+    }
+  }, 'image/jpeg', 0.92);
 }
 
 function showSuccessOverlay(data) {
@@ -397,15 +413,14 @@ function showSuccessOverlay(data) {
       greetingBadge.textContent = `⏰ ${data.minutes_late}m Late ($${data.fee_charged.toFixed(2)} Fee)`;
       greetingBadge.className = 'status-badge late';
     } else {
-      greetingBadge.textContent = '✓ On Time (Morning Shift)';
+      greetingBadge.textContent = '✓ Checked In On Time';
       greetingBadge.className = 'status-badge ontime';
     }
   } else {
-    greetingBadge.textContent = '✓ Shift Complete';
+    greetingBadge.textContent = '✓ Shift Completed';
     greetingBadge.className = 'status-badge ontime';
   }
 
-  // Show Overlay
   greetingOverlay.classList.add('active');
   resetFill.style.transition = 'none';
   resetFill.style.width = '100%';
@@ -413,7 +428,6 @@ function showSuccessOverlay(data) {
   let secondsLeft = 3;
   resetText.textContent = `Ready for next worker in ${secondsLeft}s…`;
 
-  // Start 3s countdown fill animation
   setTimeout(() => {
     resetFill.style.transition = 'width 3s linear';
     resetFill.style.width = '0%';
@@ -434,11 +448,11 @@ function showSuccessOverlay(data) {
     processing = false;
     faceReady = false;
 
-    // Brief 1.5s cooldown buffer to let previous worker step away
+    // 1.5s cooldown buffer for next person in line
     setTimeout(() => {
       cooldown = false;
       hintEl.textContent = 'Look at the camera to check in';
-      hintEl.classList.remove('ready');
+      hintEl.className = '';
     }, 1500);
 
   }, 3100);
