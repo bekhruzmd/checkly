@@ -269,7 +269,7 @@ async def add_worker(
                 await conn.execute(
                     """
                     UPDATE workers
-                    SET full_name = $1, shift = $2, department = $3, active = TRUE, face_enrolled = TRUE
+                    SET full_name = $1, shift = $2, department = $3, active = TRUE
                     WHERE id = $4
                     """,
                     full_name, shift, department, worker_id,
@@ -278,7 +278,7 @@ async def add_worker(
                 worker_id = await conn.fetchval(
                     """
                     INSERT INTO workers (employee_id, full_name, shift, department, face_enrolled, active)
-                    VALUES ($1, $2, $3, $4, TRUE, TRUE)
+                    VALUES ($1, $2, $3, $4, FALSE, TRUE)
                     RETURNING id
                     """,
                     employee_id, full_name, shift, department,
@@ -467,6 +467,22 @@ def _send_checkin_notification(
     else:
         msg = f"[Checkly] {name} checked out."
     telegram_bot.send_message(chat_id, msg)
+
+
+# ── Workers list ─────────────────────────────────────────────────────────────
+
+@app.get("/workers")
+async def list_workers():
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            """
+            SELECT id, employee_id, full_name, shift, department,
+                   face_enrolled, active
+            FROM workers
+            ORDER BY full_name
+            """
+        )
+    return [dict(r) for r in rows]
 
 
 # ── Attendance sheet ──────────────────────────────────────────────────────────

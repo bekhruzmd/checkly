@@ -226,7 +226,6 @@ footer a:hover { color: var(--ink); }
 
 <footer>
   <span>Privacy first · Secure attendance</span>
-  <a href="admin.html">Admin Dashboard</a>
 </footer>
 
 <!-- Employee ID Input Modal -->
@@ -279,6 +278,14 @@ let faceReady = false;
 let processing = false;
 let cooldown = false;
 let autoCheckTimer = null;
+let requireFaceReset = false;
+
+// Anti-spoof: track face center over the last N frames.
+// A real person always has micro-movements; a static photo held still does not.
+const LIVENESS_FRAMES   = 10;  // how many frames to accumulate
+const LIVENESS_MOVE_PX  = 3;   // min total (ΔX + ΔY) range to count as live
+const MIN_FACE_RATIO    = 0.12; // face width must be ≥12% of shorter frame dim
+let facePositions = [];
 
 // Clock updates
 function updateClock() {
@@ -290,26 +297,33 @@ setInterval(updateClock, 1000);
 updateClock();
 
 // Geolocation
-navigator.geolocation.watchPosition(
-  pos => { currentPosition = { latitude: pos.coords.latitude, longitude: pos.coords.longitude }; },
-  () => {},
-  { enableHighAccuracy: true, maximumAge: 5000 }
-);
+if (navigator.geolocation) {
+  navigator.geolocation.watchPosition(
+    pos => { currentPosition = { latitude: pos.coords.latitude, longitude: pos.coords.longitude }; },
+    () => {},
+    { enableHighAccuracy: true, maximumAge: 5000 }
+  );
+}
 
 // Camera Init
-navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false })
-  .then(stream => {
-    video.srcObject = stream;
-    video.onloadedmetadata = () => {
-      overlay.width  = video.videoWidth;
-      overlay.height = video.videoHeight;
-      loadFaceModel();
-    };
-  })
-  .catch(() => {
-    statusInstruction.textContent = 'Camera permission required for kiosk';
-    statusInstruction.className = 'status-instruction error';
-  });
+if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false })
+    .then(stream => {
+      video.srcObject = stream;
+      video.onloadedmetadata = () => {
+        overlay.width  = video.videoWidth;
+        overlay.height = video.videoHeight;
+        loadFaceModel();
+      };
+    })
+    .catch(() => {
+      statusInstruction.textContent = 'Camera unavailable — use Employee ID to check in';
+      statusInstruction.className = 'status-instruction error';
+    });
+} else {
+  statusInstruction.textContent = 'Camera unavailable — use Employee ID to check in';
+  statusInstruction.className = 'status-instruction error';
+}
 
 async function loadFaceModel() {
   try {
@@ -323,27 +337,68 @@ async function loadFaceModel() {
 
 async function detectLoop() {
   if (video.paused || video.ended) return;
-  const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 224 }));
+  const detection = await faceapi.detectSingleFace(
+    video, new faceapi.TinyFaceDetectorOptions({ inputSize: 224 })
+  );
   ctx.clearRect(0, 0, overlay.width, overlay.height);
 
   if (detection && !cooldown && !processing) {
-    camContainer.className = 'cam-container detecting';
-    if (!faceReady) {
-      faceReady = true;
-      statusInstruction.textContent = 'Hold still…';
-      statusInstruction.className = 'status-instruction ready';
+    if (requireFaceReset) {
+      // hold error state until face leaves
+    } else {
+      const box    = detection.box;
+      const cx     = box.x + box.width / 2;
+      const cy     = box.y + box.height / 2;
+      const frameMin = Math.min(overlay.width || 640, overlay.height || 480);
 
-      autoCheckTimer = setTimeout(() => {
-        if (!processing && !cooldown) executeCheckIn();
-      }, 500);
+      // ── face-size gate ────────────────────────────────────────────────────
+      if (box.width < frameMin * MIN_FACE_RATIO) {
+        camContainer.className = 'cam-container';
+        faceReady = false;
+        facePositions = [];
+        statusInstruction.textContent = 'Move closer to the camera';
+        statusInstruction.className = 'status-instruction';
+        if (autoCheckTimer) { clearTimeout(autoCheckTimer); autoCheckTimer = null; }
+        requestAnimationFrame(detectLoop);
+        return;
+      }
+
+      // ── movement accumulation ─────────────────────────────────────────────
+      facePositions.push({ x: cx, y: cy });
+      if (facePositions.length > LIVENESS_FRAMES) facePositions.shift();
+
+      const isLive = facePositions.length >= LIVENESS_FRAMES && (() => {
+        const xs = facePositions.map(p => p.x);
+        const ys = facePositions.map(p => p.y);
+        return (Math.max(...xs) - Math.min(...xs)) +
+               (Math.max(...ys) - Math.min(...ys)) >= LIVENESS_MOVE_PX;
+      })();
+
+      if (!isLive) {
+        camContainer.className = 'cam-container detecting';
+        faceReady = false;
+        if (autoCheckTimer) { clearTimeout(autoCheckTimer); autoCheckTimer = null; }
+        statusInstruction.textContent = 'Hold steady…';
+        statusInstruction.className = 'status-instruction';
+      } else if (!faceReady) {
+        faceReady = true;
+        camContainer.className = 'cam-container detecting';
+        statusInstruction.textContent = 'Hold still…';
+        statusInstruction.className = 'status-instruction ready';
+        autoCheckTimer = setTimeout(() => {
+          if (!processing && !cooldown) executeCheckIn();
+        }, 500);
+      }
     }
   } else {
     if (!cooldown && !processing) {
+      if (requireFaceReset) requireFaceReset = false;
+      facePositions = [];
       camContainer.className = 'cam-container';
       faceReady = false;
       statusInstruction.textContent = 'Look at the camera';
       statusInstruction.className = 'status-instruction';
-      if (autoCheckTimer) clearTimeout(autoCheckTimer);
+      if (autoCheckTimer) { clearTimeout(autoCheckTimer); autoCheckTimer = null; }
     }
   }
   requestAnimationFrame(detectLoop);
@@ -428,6 +483,9 @@ submitIdBtn.addEventListener('click', async () => {
     }
 
     idModal.style.display = 'none';
+    const firstName = (data.worker_name || 'Worker').split(' ')[0];
+    statusInstruction.textContent = `✓ ${data.event_type === 'check_out' ? 'Checked out' : 'Checked in'}, ${firstName}`;
+    statusInstruction.className = 'status-instruction ready';
     showResult(true, data.worker_name, data.event_type, data.minutes_late);
   } catch (err) {
     modalError.textContent = err.message || 'Worker not found';
@@ -473,11 +531,18 @@ function showResult(success, workerName, eventType, minutesLate, errorMsg) {
     processing = false;
     faceReady = false;
 
-    setTimeout(() => {
+    if (!success) {
+      requireFaceReset = true;
       cooldown = false;
-      statusInstruction.textContent = 'Look at the camera';
-      statusInstruction.className = 'status-instruction';
-    }, 1200);
+      statusInstruction.textContent = 'Step away, then look at the camera again';
+      statusInstruction.className = 'status-instruction error';
+    } else {
+      setTimeout(() => {
+        cooldown = false;
+        statusInstruction.textContent = 'Look at the camera';
+        statusInstruction.className = 'status-instruction';
+      }, 1200);
+    }
   }, 2200);
 }
 </script>

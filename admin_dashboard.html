@@ -225,6 +225,7 @@ sidebar {
     <nav class="sidebar-nav">
       <div class="nav-item active" data-tab="overview">Overview</div>
       <div class="nav-item" data-tab="attendance">Attendance</div>
+      <div class="nav-item" data-tab="workers">Workers</div>
       <div class="nav-item" data-tab="enrollment">Biometric Queue</div>
       <div class="nav-item" data-tab="cameras">Edge Cameras</div>
       <div class="nav-item" data-tab="import">Roster & Settings</div>
@@ -339,6 +340,42 @@ sidebar {
         </div>
       </div>
 
+      <div class="page-view" id="view-workers">
+        <div class="table-toolbar">
+          <input id="workers-search" type="text" placeholder="Search name or employee ID…" style="max-width:280px">
+          <div class="filter-group">
+            <select id="workers-shift-filter" style="width:auto">
+              <option value="all">All Shifts</option>
+              <option value="morning">Morning</option>
+              <option value="night">Night</option>
+            </select>
+            <select id="workers-enrolled-filter" style="width:auto">
+              <option value="all">All Statuses</option>
+              <option value="enrolled">Face Enrolled</option>
+              <option value="pending">Pending Enrollment</option>
+            </select>
+          </div>
+          <button class="btn btn-ghost btn-sm" id="refresh-workers-btn">Refresh</button>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Employee ID</th>
+                <th>Shift</th>
+                <th>Department</th>
+                <th>Face ID</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="workers-table-body">
+              <tr><td colspan="6" style="color:var(--muted);text-align:center">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       <div class="page-view" id="view-enrollment">
         <div class="table-toolbar">
           <div style="font-size:15px;font-weight:600">Biometric Verification Queue</div>
@@ -431,6 +468,37 @@ sidebar {
   </div>
 </div>
 
+<!-- Face Enrollment Modal -->
+<div id="enroll-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:300;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:28px;width:100%;max-width:460px;display:flex;flex-direction:column;gap:16px;box-shadow:0 8px 40px rgba(0,0,0,0.6);">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
+      <div>
+        <div style="font-size:16px;font-weight:600;" id="enroll-modal-title">Enroll Face ID</div>
+        <div style="font-size:13px;color:var(--muted);margin-top:3px;">Take a clear frontal photo of the worker, or upload one.</div>
+      </div>
+      <button id="close-enroll-modal" style="background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer;line-height:1;padding:0 4px;">✕</button>
+    </div>
+    <div id="enroll-cam-wrap" style="width:100%;aspect-ratio:4/3;background:#000;border-radius:10px;overflow:hidden;position:relative;display:flex;align-items:center;justify-content:center;">
+      <video id="enroll-video" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover;display:none;"></video>
+      <canvas id="enroll-preview" style="display:none;max-width:100%;max-height:100%;"></canvas>
+      <div id="enroll-placeholder" style="text-align:center;color:var(--muted);">
+        <div style="font-size:36px;">📷</div>
+        <div style="font-size:12px;margin-top:6px;">Starting camera…</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button id="enroll-capture-btn" class="btn btn-ghost" style="flex:1;">Capture</button>
+      <label for="enroll-file-input" class="btn btn-ghost" style="flex:1;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;">Upload Photo</label>
+      <input id="enroll-file-input" type="file" accept="image/*" style="display:none;">
+    </div>
+    <div class="error-msg" id="enroll-error"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;">
+      <button id="enroll-cancel-btn" class="btn btn-ghost">Cancel</button>
+      <button id="enroll-submit-btn" class="btn btn-primary" disabled>Enroll Worker</button>
+    </div>
+  </div>
+</div>
+
 <script type="module">
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -516,6 +584,7 @@ document.querySelectorAll('.nav-item').forEach(item => {
     document.getElementById('page-heading').textContent = item.textContent;
 
     if (tab === 'enrollment') loadQueue();
+    if (tab === 'workers') loadWorkersList();
   });
 });
 
@@ -663,30 +732,13 @@ async function loadQueue() {
       <td style="font-weight:600">${esc(w.full_name)}</td>
       <td>${esc(w.shift)}</td>
       <td>${esc(w.department || '—')}</td>
-      <td>${esc(w.session_status || 'Ready')}</td>
-      <td style="font-family:var(--font-mono)">${w.sample_count || 5}/${w.min_samples || 5}</td>
-      <td><button class="btn btn-primary btn-sm enroll-btn" data-id="${w.id}">Enroll & Activate</button></td>
+      <td>${esc(w.session_status || 'Pending')}</td>
+      <td style="font-family:var(--font-mono)">${w.sample_count != null ? w.sample_count : '—'}/${w.min_samples || '—'}</td>
+      <td><button class="btn btn-primary btn-sm enroll-btn" data-id="${w.id}" data-name="${esc(w.full_name)}">Enroll Face ID</button></td>
     </tr>`).join('');
 
     tbody.querySelectorAll('.enroll-btn').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const workerId = btn.dataset.id;
-        btn.disabled = true;
-        btn.textContent = 'Enrolling…';
-        try {
-          if (supabase) {
-            await supabase.from('workers').update({ face_enrolled: true, active: true }).eq('id', workerId);
-          }
-          await fetch(`${API_BASE}/enrollment/quick-enroll/${workerId}`, { method: 'POST' }).catch(() => null);
-          btn.textContent = '✓ Enrolled';
-          btn.className = 'btn btn-pass btn-sm';
-          setTimeout(() => loadQueue(), 1000);
-        } catch (e) {
-          alert('Enrollment error: ' + (e.message || e));
-          btn.disabled = false;
-          btn.textContent = 'Enroll & Activate';
-        }
-      });
+      btn.addEventListener('click', () => openEnrollModal(btn.dataset.id, btn.dataset.name));
     });
   } catch (e) {
     tbody.innerHTML = `<tr><td colspan="6" style="color:var(--red);text-align:center">${esc(String(e))}</td></tr>`;
@@ -712,7 +764,7 @@ document.getElementById('single-worker-btn').addEventListener('click', async () 
     if (supabase) {
       const { data, error } = await supabase
         .from('workers')
-        .upsert([{ employee_id: empId, full_name: name, shift: shift, department: dept || null, active: true, face_enrolled: true }], { onConflict: 'employee_id' })
+        .upsert([{ employee_id: empId, full_name: name, shift: shift, department: dept || null, active: true, face_enrolled: false }], { onConflict: 'employee_id' })
         .select();
 
       if (error) {
@@ -751,10 +803,207 @@ document.getElementById('single-worker-btn').addEventListener('click', async () 
   }
 });
 
+// ── Workers list ──────────────────────────────────────────────────────────────
+let _allWorkers = [];
+
+async function loadWorkersList() {
+  const tbody = document.getElementById('workers-table-body');
+  tbody.innerHTML = '<tr><td colspan="6" style="color:var(--muted);text-align:center">Loading…</td></tr>';
+  try {
+    let workers = [];
+    const resp = await fetch(`${API_BASE}/workers`).catch(() => null);
+    if (resp && resp.ok) {
+      workers = await resp.json();
+    } else if (supabase) {
+      const { data } = await supabase.from('workers').select('*').order('full_name');
+      workers = data || [];
+    }
+    _allWorkers = workers;
+    renderWorkersList();
+  } catch (e) {
+    tbody.innerHTML = `<tr><td colspan="6" style="color:var(--red);text-align:center">${esc(String(e))}</td></tr>`;
+  }
+}
+
+function renderWorkersList() {
+  const search   = (document.getElementById('workers-search').value || '').toLowerCase();
+  const shift    = document.getElementById('workers-shift-filter').value;
+  const enrolled = document.getElementById('workers-enrolled-filter').value;
+  const tbody    = document.getElementById('workers-table-body');
+
+  let rows = _allWorkers.filter(w => {
+    if (search && !((w.full_name || '').toLowerCase().includes(search) || (w.employee_id || '').toLowerCase().includes(search))) return false;
+    if (shift !== 'all' && w.shift !== shift) return false;
+    if (enrolled === 'enrolled' && !w.face_enrolled) return false;
+    if (enrolled === 'pending' && w.face_enrolled) return false;
+    return true;
+  });
+
+  if (rows.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" style="color:var(--muted);text-align:center">No workers match the current filters.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = rows.map(w => `<tr>
+    <td style="font-weight:600">${esc(w.full_name)}</td>
+    <td style="font-family:var(--font-mono)">${esc(w.employee_id || '—')}</td>
+    <td style="text-transform:capitalize">${esc(w.shift || '—')}</td>
+    <td style="color:var(--muted)">${esc(w.department || '—')}</td>
+    <td>${w.face_enrolled
+      ? '<span class="status-tag present">✓ Enrolled</span>'
+      : '<span class="status-tag absent">Pending</span>'}</td>
+    <td>${w.active
+      ? '<span class="status-tag present">Active</span>'
+      : '<span class="status-tag absent">Inactive</span>'}</td>
+  </tr>`).join('');
+}
+
+document.getElementById('workers-search').addEventListener('input', renderWorkersList);
+document.getElementById('workers-shift-filter').addEventListener('change', renderWorkersList);
+document.getElementById('workers-enrolled-filter').addEventListener('change', renderWorkersList);
+document.getElementById('refresh-workers-btn').addEventListener('click', loadWorkersList);
+
 function esc(str) {
   if (str == null) return '';
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
+
+// ── Face Enrollment Modal ──────────────────────────────────────────────────────
+let _enrollWorkerId = null;
+let _enrollStream   = null;
+let _enrollBlob     = null;
+
+function openEnrollModal(workerId, workerName) {
+  _enrollWorkerId = workerId;
+  _enrollBlob = null;
+  document.getElementById('enroll-modal-title').textContent = `Enroll Face ID — ${workerName}`;
+  document.getElementById('enroll-error').textContent = '';
+  document.getElementById('enroll-submit-btn').disabled = true;
+  document.getElementById('enroll-submit-btn').textContent = 'Enroll Worker';
+  document.getElementById('enroll-preview').style.display = 'none';
+  document.getElementById('enroll-video').style.display = 'none';
+  const placeholder = document.getElementById('enroll-placeholder');
+  placeholder.style.display = 'flex';
+  placeholder.style.flexDirection = 'column';
+  placeholder.style.alignItems = 'center';
+  placeholder.innerHTML = '<div style="font-size:36px;">📷</div><div style="font-size:12px;margin-top:6px;">Starting camera…</div>';
+  const captureBtn = document.getElementById('enroll-capture-btn');
+  captureBtn.textContent = 'Capture';
+  captureBtn.dataset.state = 'capture';
+  captureBtn.disabled = false;
+  document.getElementById('enroll-modal').style.display = 'flex';
+
+  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false })
+      .then(stream => {
+        _enrollStream = stream;
+        const vid = document.getElementById('enroll-video');
+        vid.srcObject = stream;
+        vid.style.display = 'block';
+        placeholder.style.display = 'none';
+      })
+      .catch(() => {
+        placeholder.innerHTML = '<div style="font-size:12px;color:var(--muted);">Camera unavailable — use Upload Photo</div>';
+        captureBtn.disabled = true;
+      });
+  } else {
+    placeholder.innerHTML = '<div style="font-size:12px;color:var(--muted);">Camera unavailable — use Upload Photo</div>';
+    captureBtn.disabled = true;
+  }
+}
+
+function closeEnrollModal() {
+  if (_enrollStream) { _enrollStream.getTracks().forEach(t => t.stop()); _enrollStream = null; }
+  document.getElementById('enroll-video').srcObject = null;
+  document.getElementById('enroll-modal').style.display = 'none';
+  _enrollWorkerId = null;
+  _enrollBlob = null;
+}
+
+document.getElementById('close-enroll-modal').addEventListener('click', closeEnrollModal);
+document.getElementById('enroll-cancel-btn').addEventListener('click', closeEnrollModal);
+
+document.getElementById('enroll-capture-btn').addEventListener('click', () => {
+  const btn = document.getElementById('enroll-capture-btn');
+  const vid = document.getElementById('enroll-video');
+  const canvas = document.getElementById('enroll-preview');
+
+  if (btn.dataset.state === 'retake') {
+    // Go back to live feed
+    _enrollBlob = null;
+    canvas.style.display = 'none';
+    vid.style.display = 'block';
+    btn.textContent = 'Capture';
+    btn.dataset.state = 'capture';
+    document.getElementById('enroll-submit-btn').disabled = true;
+    return;
+  }
+
+  if (!_enrollStream || vid.videoWidth === 0) return;
+  canvas.width  = vid.videoWidth;
+  canvas.height = vid.videoHeight;
+  canvas.getContext('2d').drawImage(vid, 0, 0);
+  vid.style.display = 'none';
+  canvas.style.display = 'block';
+  btn.textContent = 'Retake';
+  btn.dataset.state = 'retake';
+  canvas.toBlob(blob => {
+    _enrollBlob = blob;
+    document.getElementById('enroll-submit-btn').disabled = false;
+  }, 'image/jpeg', 0.92);
+});
+
+document.getElementById('enroll-file-input').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  _enrollBlob = file;
+  const url = URL.createObjectURL(file);
+  const img = new Image();
+  img.onload = () => {
+    const canvas = document.getElementById('enroll-preview');
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    canvas.getContext('2d').drawImage(img, 0, 0);
+    canvas.style.display = 'block';
+    document.getElementById('enroll-video').style.display = 'none';
+    document.getElementById('enroll-placeholder').style.display = 'none';
+    URL.revokeObjectURL(url);
+  };
+  img.src = url;
+  document.getElementById('enroll-submit-btn').disabled = false;
+  e.target.value = '';
+});
+
+document.getElementById('enroll-submit-btn').addEventListener('click', async () => {
+  if (!_enrollBlob || !_enrollWorkerId) return;
+  const btn = document.getElementById('enroll-submit-btn');
+  const errEl = document.getElementById('enroll-error');
+  btn.disabled = true;
+  btn.textContent = 'Enrolling…';
+  errEl.textContent = '';
+
+  const form = new FormData();
+  form.append('photo', _enrollBlob, 'enroll.jpg');
+
+  try {
+    const resp = await fetch(`${API_BASE}/enrollment/enroll-photo/${_enrollWorkerId}`, {
+      method: 'POST', body: form,
+    });
+    const data = await resp.json().catch(() => ({}));
+    if (resp.ok) {
+      closeEnrollModal();
+      loadQueue();
+    } else {
+      errEl.textContent = data.detail || `Error ${resp.status}`;
+      btn.disabled = false;
+      btn.textContent = 'Enroll Worker';
+    }
+  } catch (e) {
+    errEl.textContent = 'Cannot reach server. Is the backend running?';
+    btn.disabled = false;
+    btn.textContent = 'Enroll Worker';
+  }
+});
 
 checkSession();
 </script>

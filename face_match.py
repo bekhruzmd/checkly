@@ -19,8 +19,8 @@ except Exception as _e:
     print("Notice: InsightFace model initialization deferred or using fallback:", _e)
     _face_app = None
 
-MATCH_THRESHOLD_ACCEPT = 0.70   # cosine similarity above this -> accept
-MATCH_THRESHOLD_REVIEW = 0.60   # between review and accept -> flag for manual review
+MATCH_THRESHOLD_ACCEPT = 0.60   # cosine similarity above this -> accept
+MATCH_THRESHOLD_REVIEW = 0.45   # between review and accept -> flag for manual review
                                  # below review threshold -> reject
 
 
@@ -50,17 +50,31 @@ def get_embedding(photo_bytes: bytes) -> list[float]:
 
 def check_liveness(photo_bytes: bytes) -> bool:
     """
-    Minimal liveness heuristic for MVP: reject obvious screen/photo
-    replays by checking face size relative to frame and basic sharpness
-    (a photo-of-a-photo tends to be blurrier / lower contrast than a
-    live capture). This is intentionally simple for v1 -- swap in
-    InsightFace's dedicated anti-spoofing model later if fraud shows
-    up in practice.
+    Liveness heuristics:
+    1. Sharpness — a photo-of-a-photo is usually blurrier than a live capture.
+    2. Face size — the face must cover at least 8% of the frame's shorter
+       dimension. Someone holding up a phone from 2m away won't pass.
+    Both checks must pass to be considered live.
     """
     img = _bytes_to_cv2_image(photo_bytes)
+    h, w = img.shape[:2]
+
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     sharpness = cv2.Laplacian(gray, cv2.CV_64F).var()
-    return sharpness > 50.0  # tune this threshold against real captures
+    if sharpness < 40.0:
+        return False
+
+    if _face_app is not None:
+        faces = _face_app.get(img)
+        if not faces:
+            return False
+        bbox = faces[0].bbox  # [x1, y1, x2, y2]
+        face_w = bbox[2] - bbox[0]
+        min_face_px = min(w, h) * 0.08
+        if face_w < min_face_px:
+            return False
+
+    return True
 
 
 def cosine_similarity(a: list[float], b: list[float]) -> float:

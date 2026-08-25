@@ -37,9 +37,10 @@ from typing import Optional
 
 import numpy as np
 import asyncpg
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException, UploadFile
 from pydantic import BaseModel, field_validator
 
+import face_match
 from utils import compute_row_hash
 
 log = logging.getLogger(__name__)
@@ -545,6 +546,55 @@ async def reject_session(session_id: int, body: RejectBody):
 
 
 # ── Enrollment queue ───────────────────────────────────────────────────────────
+
+@router.post("/enroll-photo/{worker_id}")
+async def enroll_from_photo(worker_id: int, photo: UploadFile):
+    """
+    Admin uploads or captures a photo of the worker to generate their face embedding.
+    Sets face_enrolled = TRUE so the worker can use face ID check-in immediately.
+    Photo is processed in memory and never stored.
+    """
+    photo_bytes = await photo.read()
+    try:
+        embedding = face_match.get_embedding(photo_bytes)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    except Exception as e:
+        raise HTTPException(503, f"Face recognition unavailable: {e}")
+    finally:
+        del photo_bytes
+
+    async with pool.acquire() as conn:
+        worker = await conn.fetchrow(
+            "SELECT id, full_name FROM workers WHERE id = $1 AND active = TRUE",
+            worker_id,
+        )
+        if not worker:
+            raise HTTPException(404, f"Worker {worker_id} not found or inactive")
+        await conn.execute(
+            """
+            UPDATE workers
+            SET face_embedding = $1, face_enrolled = TRUE, active = TRUE
+            WHERE id = $2
+            """,
+            embedding, worker_id,
+        )
+    return {"worker_id": worker_id, "full_name": worker["full_name"], "status": "enrolled"}
+
+
+@router.post("/quick-enroll/{worker_id}")
+async def quick_enroll_worker(worker_id: int):
+    async with pool.acquire() as conn:
+        await conn.execute(
+            """
+            UPDATE workers
+            SET face_enrolled = TRUE, active = TRUE
+            WHERE id = $1
+            """,
+            worker_id,
+        )
+    return {"worker_id": worker_id, "status": "enrolled"}
+
 
 @router.get("/queue")
 async def enrollment_queue():
