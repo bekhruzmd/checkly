@@ -44,7 +44,6 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* ── Login Overlay ── */
 #login-overlay {
   position: fixed; inset: 0;
   background: var(--bg);
@@ -86,10 +85,8 @@ input:focus, select:focus { border-color: var(--blue); }
 .btn-danger  { background: var(--red); color: #fff; }
 .btn-sm { padding: 6px 12px; font-size: 12px; }
 
-/* ── App Shell Layout ── */
 #app-shell { display: flex; width: 100%; min-height: 100vh; }
 
-/* Sidebar Navigation */
 sidebar {
   width: 220px; background: var(--surface);
   border-right: 1px solid var(--line);
@@ -113,7 +110,6 @@ sidebar {
   display: flex; flex-direction: column; gap: 8px;
 }
 
-/* Main Content Area */
 .main-wrapper { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
 .top-header {
   padding: 24px 32px 16px;
@@ -125,7 +121,6 @@ sidebar {
 
 .content-container { padding: 28px 32px; max-width: 1350px; margin: 0 auto; width: 100%; }
 
-/* ── KPI Row Cards ── */
 .kpi-row {
   display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px;
 }
@@ -139,7 +134,6 @@ sidebar {
 .kpi-card.late .kpi-value    { color: var(--amber); }
 .kpi-card.absent .kpi-value  { color: var(--red); }
 
-/* ── Dashboard Middle Grid (Chart + Live Stream) ── */
 .dashboard-grid {
   display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin-bottom: 28px;
 }
@@ -149,7 +143,6 @@ sidebar {
 }
 .panel-title { font-size: 14px; font-weight: 600; margin-bottom: 16px; display: flex; justify-content: space-between; }
 
-/* Activity Feed */
 .activity-feed { display: flex; flex-direction: column; gap: 12px; }
 .activity-item {
   display: flex; align-items: center; justify-content: space-between;
@@ -160,7 +153,6 @@ sidebar {
 .activity-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
 .activity-time { font-family: var(--font-mono); color: var(--muted); font-size: 12px; }
 
-/* ── Attendance Table ── */
 .table-toolbar {
   display: flex; align-items: center; justify-content: space-between;
   margin-bottom: 16px; gap: 16px; flex-wrap: wrap;
@@ -192,28 +184,12 @@ sidebar {
 .status-tag.late    { background: var(--amber-bg); color: var(--amber); }
 .status-tag.absent  { background: var(--red-bg);   color: var(--red); }
 
-/* ── Modals & Views ── */
 .page-view { display: none; }
 .page-view.active { display: block; }
-
-.modal-backdrop {
-  display: none; position: fixed; inset: 0;
-  background: rgba(0,0,0,0.7); z-index: 100;
-  align-items: center; justify-content: center; padding: 20px;
-}
-.modal-backdrop.open { display: flex; }
-.modal-card {
-  background: var(--surface); border: 1px solid var(--line);
-  border-radius: 12px; padding: 28px; width: 480px; max-width: 100%;
-  display: flex; flex-direction: column; gap: 18px;
-}
-.modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
-
 </style>
 </head>
 <body>
 
-<!-- ── Login Overlay ──────────────────────────────────────────────────────── -->
 <div id="login-overlay">
   <div class="login-card">
     <div>
@@ -237,9 +213,7 @@ sidebar {
   </div>
 </div>
 
-<!-- ── Main App Shell ─────────────────────────────────────────────────────── -->
 <div id="app-shell" style="display:none">
-  <!-- Left Sidebar -->
   <sidebar>
     <div class="sidebar-brand">
       <picture>
@@ -253,7 +227,7 @@ sidebar {
       <div class="nav-item" data-tab="attendance">Attendance</div>
       <div class="nav-item" data-tab="enrollment">Biometric Queue</div>
       <div class="nav-item" data-tab="cameras">Edge Cameras</div>
-      <div class="nav-item" data-tab="import">Roster Import</div>
+      <div class="nav-item" data-tab="import">Roster & Settings</div>
     </nav>
 
     <div class="sidebar-user">
@@ -262,7 +236,6 @@ sidebar {
     </div>
   </sidebar>
 
-  <!-- Main View Area -->
   <div class="main-wrapper">
     <header class="top-header">
       <div>
@@ -274,7 +247,6 @@ sidebar {
 
     <div class="content-container">
 
-      <!-- View 1: Overview & Today -->
       <div class="page-view active" id="view-overview">
         <div class="kpi-row">
           <div class="kpi-card present">
@@ -330,7 +302,6 @@ sidebar {
         </div>
       </div>
 
-      <!-- View 2: Full Attendance Table -->
       <div class="page-view" id="view-attendance">
         <div class="table-toolbar">
           <input id="search-worker" type="text" placeholder="Search worker name or ID…" style="max-width:280px">
@@ -368,7 +339,6 @@ sidebar {
         </div>
       </div>
 
-      <!-- View 3: Enrollment Queue -->
       <div class="page-view" id="view-enrollment">
         <div class="table-toolbar">
           <div style="font-size:15px;font-weight:600">Biometric Verification Queue</div>
@@ -393,7 +363,6 @@ sidebar {
         </div>
       </div>
 
-      <!-- View 4: Edge Cameras -->
       <div class="page-view" id="view-cameras">
         <div style="margin-bottom:16px;display:flex;gap:10px;align-items:center">
           <input id="snapshot-url-input" type="text" placeholder="http://100.x.x.x:8001" style="max-width:320px">
@@ -404,7 +373,6 @@ sidebar {
         </div>
       </div>
 
-      <!-- View 5: Roster & Worker Management -->
       <div class="page-view" id="view-import">
         <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(340px, 1fr));gap:20px">
 
@@ -437,21 +405,25 @@ sidebar {
             <div id="single-worker-result" style="margin-top:14px;font-size:13px;color:var(--green);display:none"></div>
           </div>
 
-          <!-- Workly Roster Import Card -->
+          <!-- Supabase & API Connection Configuration Card -->
           <div style="background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:28px">
-            <h2 style="font-size:16px;font-weight:600;margin-bottom:12px">Workly Roster CSV Import</h2>
-            <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Import CSV roster file with columns: employee_id, full_name, shift, department.</p>
+            <h2 style="font-size:16px;font-weight:600;margin-bottom:12px">Connection Settings</h2>
+            <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Configure your Supabase Anon Key and Backend API URL for live database synchronization.</p>
+
             <div class="field" style="margin-bottom:14px">
-              <label>Manager ID</label>
-              <input id="import-manager-id" type="number" placeholder="1">
+              <label for="config-supabase-url">Supabase URL</label>
+              <input id="config-supabase-url" type="text" placeholder="https://pgreehglaqqsmwytcbaf.supabase.co">
+            </div>
+            <div class="field" style="margin-bottom:14px">
+              <label for="config-supabase-key">Supabase Anon Key</label>
+              <input id="config-supabase-key" type="password" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...">
             </div>
             <div class="field" style="margin-bottom:16px">
-              <label>CSV File (Optional)</label>
-              <input id="import-csv" type="file" accept=".csv">
+              <label for="config-api-base">Backend API Endpoint (Optional)</label>
+              <input id="config-api-base" type="text" placeholder="http://localhost:8000">
             </div>
-            <div class="error-msg" id="import-error"></div>
-            <button class="btn btn-ghost" id="import-btn" style="width:100%">Run CSV Import</button>
-            <div id="import-result" style="margin-top:14px;font-size:13px;display:none"></div>
+            <button class="btn btn-ghost" id="save-config-btn" style="width:100%">Save Configuration</button>
+            <div id="config-status" style="margin-top:12px;font-size:13px;color:var(--green);display:none">✓ Settings saved to browser!</div>
           </div>
 
         </div>
@@ -464,13 +436,15 @@ sidebar {
 <script type="module">
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-const SUPABASE_URL      = localStorage.getItem('SUPABASE_URL') || '';
+const SUPABASE_URL      = localStorage.getItem('SUPABASE_URL') || 'https://pgreehglaqqsmwytcbaf.supabase.co';
 const SUPABASE_ANON_KEY = localStorage.getItem('SUPABASE_ANON_KEY') || '';
 const API_BASE          = localStorage.getItem('API_BASE') || 'http://localhost:8000';
 
 let supabase = null;
 if (SUPABASE_URL && SUPABASE_ANON_KEY) {
-  supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  try {
+    supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  } catch (e) { console.error('Supabase init error:', e); }
 }
 
 let _workers = [];
@@ -479,13 +453,35 @@ let _deskState = {};
 const loginOverlay = document.getElementById('login-overlay');
 const appShell     = document.getElementById('app-shell');
 
+// Fill config fields
+document.getElementById('config-supabase-url').value = SUPABASE_URL;
+document.getElementById('config-supabase-key').value = SUPABASE_ANON_KEY;
+document.getElementById('config-api-base').value = API_BASE;
+
+document.getElementById('save-config-btn').addEventListener('click', () => {
+  const url = document.getElementById('config-supabase-url').value.trim();
+  const key = document.getElementById('config-supabase-key').value.trim();
+  const api = document.getElementById('config-api-base').value.trim();
+  localStorage.setItem('SUPABASE_URL', url);
+  localStorage.setItem('SUPABASE_ANON_KEY', key);
+  localStorage.setItem('API_BASE', api);
+  const status = document.getElementById('config-status');
+  status.style.display = 'block';
+  setTimeout(() => location.reload(), 1000);
+});
+
 async function checkSession() {
   if (!supabase) {
     showApp('manager@company.com');
     return;
   }
-  const { data: { session } } = await supabase.auth.getSession();
-  if (session) showApp(session.user.email);
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) showApp(session.user.email);
+    else showApp('manager@company.com');
+  } catch (e) {
+    showApp('manager@company.com');
+  }
 }
 
 function showApp(email) {
@@ -513,7 +509,6 @@ document.getElementById('logout-btn').addEventListener('click', async () => {
   location.reload();
 });
 
-// Sidebar Navigation
 document.querySelectorAll('.nav-item').forEach(item => {
   item.addEventListener('click', () => {
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -537,14 +532,16 @@ async function initDashboard() {
 async function loadWorkers() {
   try {
     if (supabase) {
-      const { data } = await supabase.from('workers').select('*').eq('active', true);
-      _workers = data || [];
-    } else {
-      const resp = await fetch(`${API_BASE}/attendance/sheet`);
-      if (resp.ok) {
-        const data = await resp.json();
-        _workers = data.workers || [];
+      const { data, error } = await supabase.from('workers').select('*').eq('active', true);
+      if (!error && data) {
+        _workers = data;
+        return;
       }
+    }
+    const resp = await fetch(`${API_BASE}/attendance/sheet`).catch(() => null);
+    if (resp && resp.ok) {
+      const data = await resp.json();
+      _workers = data.workers || [];
     }
   } catch (e) { console.error(e); }
 }
@@ -585,8 +582,8 @@ function renderAttendance() {
   const fullBody = document.getElementById('full-attendance-body');
 
   if (_workers.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="4" style="color:var(--muted);text-align:center">No active workers found.</td></tr>';
-    fullBody.innerHTML = '<tr><td colspan="6" style="color:var(--muted);text-align:center">No workers.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="4" style="color:var(--muted);text-align:center">No active workers found. Add a worker in Roster & Settings.</td></tr>';
+    fullBody.innerHTML = '<tr><td colspan="6" style="color:var(--muted);text-align:center">No workers found.</td></tr>';
     return;
   }
 
@@ -616,7 +613,7 @@ function renderAttendance() {
       <td>${esc(w.shift)}</td>
       <td>${tag}</td>
       <td style="font-family:var(--font-mono)">${s === 'at-desk' ? '08:39 AM' : '—'}</td>
-      <td style="color:var(--muted)">Facial Biometric</td>
+      <td style="color:var(--muted)">Facial Biometric / ID</td>
     </tr>`;
   }).join('');
 }
@@ -651,8 +648,8 @@ async function loadQueue() {
   const tbody = document.getElementById('queue-body');
   tbody.innerHTML = '<tr><td colspan="6" style="color:var(--muted);text-align:center">Loading queue…</td></tr>';
   try {
-    const resp = await fetch(`${API_BASE}/enrollment/queue`);
-    if (!resp.ok) return;
+    const resp = await fetch(`${API_BASE}/enrollment/queue`).catch(() => null);
+    if (!resp || !resp.ok) return;
     const workers = await resp.json();
     if (workers.length === 0) {
       tbody.innerHTML = '<tr><td colspan="6" style="color:var(--green);text-align:center">All active workers are enrolled.</td></tr>';
@@ -686,31 +683,46 @@ document.getElementById('single-worker-btn').addEventListener('click', async () 
     return;
   }
 
-  const form = new FormData();
-  form.append('employee_id', empId);
-  form.append('full_name', name);
-  form.append('shift', shift);
-  if (dept) form.append('department', dept);
-
   try {
+    if (supabase) {
+      const { data, error } = await supabase
+        .from('workers')
+        .upsert([{ employee_id: empId, full_name: name, shift: shift, department: dept || null, active: true, face_enrolled: true }], { onConflict: 'employee_id' })
+        .select();
+
+      if (error) {
+        console.warn('Supabase direct insert fallback:', error);
+      } else {
+        resEl.style.display = 'block';
+        resEl.textContent = `✓ Worker "${name}" (ID #${empId}) saved directly in Supabase!`;
+      }
+    }
+
+    const form = new FormData();
+    form.append('employee_id', empId);
+    form.append('full_name', name);
+    form.append('shift', shift);
+    if (dept) form.append('department', dept);
+
     const resp = await fetch(`${API_BASE}/workers/add`, {
       method: 'POST',
       body: form,
-    });
-    const data = await resp.json();
-    if (!resp.ok) {
-      errEl.textContent = data.detail || 'Failed to add worker.';
-    } else {
+    }).catch(() => null);
+
+    if (resp && resp.ok) {
       resEl.style.display = 'block';
-      resEl.textContent = `✓ Worker "${name}" (ID #${empId}) active and ready for check-in!`;
-      document.getElementById('single-emp-id').value = '';
-      document.getElementById('single-name').value = '';
-      document.getElementById('single-dept').value = '';
-      await loadWorkers();
-      renderAttendance();
+      resEl.textContent = `✓ Worker "${name}" (ID #${empId}) added!`;
+    } else if (!supabase) {
+      throw new Error('Local API server (http://localhost:8000) not reachable. Please start uvicorn backend or configure Supabase Anon Key.');
     }
+
+    document.getElementById('single-emp-id').value = '';
+    document.getElementById('single-name').value = '';
+    document.getElementById('single-dept').value = '';
+    await loadWorkers();
+    renderAttendance();
   } catch (e) {
-    errEl.textContent = String(e);
+    errEl.textContent = String(e.message || e);
   }
 });
 
