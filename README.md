@@ -1,5 +1,7 @@
 # Attendance MVP
 
+[![CI/CD](https://github.com/bekhruzmd/checkly/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/bekhruzmd/checkly/actions/workflows/ci-cd.yml)
+
 ## Live Demo
 
 - **Worker check-in:** https://bekhruzmd.github.io/checkly/
@@ -37,6 +39,22 @@ uvicorn main:app --reload --port 8000
 #    in webapp/index.html to your API's URL
 python -m http.server 8080 --directory webapp
 ```
+
+## CI/CD
+
+GitHub Actions runs the test suite for every pull request and every push to
+`main`. After the tests pass on `main`, the static frontend is deployed to
+GitHub Pages automatically.
+
+Run the same checks locally with:
+
+```bash
+python -m pip install -r requirements-dev.txt
+python -m pytest tests -q
+```
+
+The workflow does not deploy the FastAPI backend. Its hosting provider and
+production secrets must be configured separately.
 
 ## What's deliberately NOT in this MVP (add before real deployment)
 
