@@ -44,7 +44,8 @@ python -m http.server 8080 --directory webapp
 
 GitHub Actions runs the test suite for every pull request and every push to
 `main`. After the tests pass on `main`, the static frontend is deployed to
-GitHub Pages automatically.
+GitHub Pages automatically. If the `RENDER_DEPLOY_HOOK_URL` repository secret
+is configured, the same workflow also triggers a backend deploy on Render.
 
 Run the same checks locally with:
 
@@ -53,8 +54,9 @@ python -m pip install -r requirements-dev.txt
 python -m pytest tests -q
 ```
 
-The workflow does not deploy the FastAPI backend. Its hosting provider and
-production secrets must be configured separately.
+Backend deployment is optional: without `RENDER_DEPLOY_HOOK_URL`, the Render
+deploy step is skipped and the workflow still succeeds. Render-side hosting and
+production secrets must still be configured separately.
 
 ## What's deliberately NOT in this MVP (add before real deployment)
 
